@@ -40,6 +40,35 @@ class CustomersViewModel(
                 }
         }
     }
+
+    fun registerPayment(customerId: String, amount: Double) {
+        viewModelScope.launch {
+            try {
+                val payment = com.devsoft.freshfood.domain.model.Payment(
+                    customer_id = customerId,
+                    amount = amount,
+                    payment_method = "CASH",
+                    user_id = "00000000-0000-0000-0000-000000000000" // MOCK USER
+                )
+                repository.registerPayment(payment)
+                // Reload customers to get updated credit
+                loadCustomers()
+            } catch (e: Exception) {
+                // In a real app we'd show a toast or error state here
+            }
+        }
+    }
+
+    fun addCustomer(customer: Customer) {
+        viewModelScope.launch {
+            try {
+                repository.insertCustomer(customer)
+                loadCustomers()
+            } catch (e: Exception) {
+                _uiState.value = CustomersUiState.Error(e.message ?: "Failed to add customer")
+            }
+        }
+    }
 }
 
 class CustomersViewModelFactory(

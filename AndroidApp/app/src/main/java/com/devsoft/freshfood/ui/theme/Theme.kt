@@ -25,8 +25,23 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
+    onBackground = TextPrimaryLight,
+    onSurface = TextPrimaryLight,
+    error = ErrorRed,
+    onError = Color.White
+)
+
+private val DarkColorScheme = darkColorScheme(
+    primary = PrimaryGreenLight,
+    secondary = SecondaryBlueLight,
+    tertiary = PrimaryGreen,
+    background = BackgroundDark,
+    surface = SurfaceDark,
+    onPrimary = TextPrimaryLight,
+    onSecondary = TextPrimaryLight,
+    onTertiary = Color.White,
+    onBackground = TextPrimaryDark,
+    onSurface = TextPrimaryDark,
     error = ErrorRed,
     onError = Color.White
 )
@@ -34,23 +49,30 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun FreshFoodTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = false, // Set to true to enable Material You dynamic colors
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme // Force light theme for consistency in fresh food app
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
     
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            window.statusBarColor = colorScheme.background.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = androidx.compose.material3.Typography(),
+        typography = Typography, // Ensure Typography is defined in Type.kt
         content = content
     )
 }

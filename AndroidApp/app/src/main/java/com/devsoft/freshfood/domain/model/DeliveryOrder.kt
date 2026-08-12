@@ -8,5 +8,7 @@ data class DeliveryOrder(
     val customer_id: String? = null,
     val delivery_employee_id: String? = null,
     val status: String = "PENDING",
-    val notes: String? = null
+    val notes: String? = null,
+    val created_at: String? = null,
+    val updated_at: String? = null
 )

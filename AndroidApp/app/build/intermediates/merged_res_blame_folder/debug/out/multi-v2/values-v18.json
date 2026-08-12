@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.devsoft.freshfood.app-mergeDebugResources-56:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\CCi-U08\\.gradle\\caches\\9.0-milestone-1\\transforms\\931128bfb093e57cc0668f39da747db6\\transformed\\appcompat-1.1.0\\res\\values-v18\\values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        }
+    ]
+}

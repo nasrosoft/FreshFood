@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddCustomerScreen(
+    viewModel: com.devsoft.freshfood.presentation.customers.CustomersViewModel,
     onBack: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
@@ -56,7 +57,21 @@ fun AddCustomerScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = { onBack() },
+                onClick = {
+                    if (name.isNotBlank()) {
+                        val customer = com.devsoft.freshfood.domain.model.Customer(
+                            id = java.util.UUID.randomUUID().toString(),
+                            name = name,
+                            phone = phone.ifBlank { null },
+                            customer_type = if (isWholesale) "WHOLESALE" else "RETAIL",
+                            credit_limit = creditLimit.toDoubleOrNull() ?: 0.0,
+                            current_credit = 0.0,
+                            is_active = true
+                        )
+                        viewModel.addCustomer(customer)
+                        onBack()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 Text("Save Customer")

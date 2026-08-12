@@ -48,4 +48,8 @@ class ProductRepositoryImpl(
             .decodeList<StockBatch>()
             .sortedBy { it.expiration_date }
     }
+
+    override suspend fun insertStockBatch(stockBatch: StockBatch) {
+        supabase.postgrest["stock_batches"].insert(stockBatch)
+    }
 }

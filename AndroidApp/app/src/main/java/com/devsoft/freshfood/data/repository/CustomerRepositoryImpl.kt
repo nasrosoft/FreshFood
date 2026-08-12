@@ -25,6 +25,10 @@ class CustomerRepositoryImpl(
             .decodeSingleOrNull<Customer>()
     }
 
+    override suspend fun insertCustomer(customer: Customer) {
+        supabase.postgrest["customers"].insert(customer)
+    }
+
     override suspend fun registerPayment(payment: Payment) {
         // We use an RPC function or a single transaction. 
         // Here we insert the payment directly. The trigger `trigger_update_customer_credit` 

@@ -10,4 +10,5 @@ interface ProductRepository {
     suspend fun insertProduct(product: Product)
     suspend fun updateProduct(product: Product)
     suspend fun getStockBatchesForProduct(productId: String): List<StockBatch>
+    suspend fun insertStockBatch(stockBatch: StockBatch)
 }

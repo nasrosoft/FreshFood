@@ -1,0 +1,66 @@
+package com.devsoft.freshfood.presentation.deliveries
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.devsoft.freshfood.domain.model.DeliveryOrderWithDetails
+import com.devsoft.freshfood.domain.repository.DeliveryRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
+
+sealed class DeliveryUiState {
+    object Loading : DeliveryUiState()
+    data class Success(val deliveries: List<DeliveryOrderWithDetails>) : DeliveryUiState()
+    data class Error(val message: String) : DeliveryUiState()
+}
+
+class DeliveryViewModel(
+    private val repository: DeliveryRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<DeliveryUiState>(DeliveryUiState.Loading)
+    val uiState: StateFlow<DeliveryUiState> = _uiState.asStateFlow()
+
+    init {
+        loadDeliveries()
+    }
+
+    fun loadDeliveries() {
+        viewModelScope.launch {
+            _uiState.value = DeliveryUiState.Loading
+            repository.getDeliveries()
+                .catch { e ->
+                    _uiState.value = DeliveryUiState.Error(e.message ?: "Unknown Error")
+                }
+                .collect { deliveries ->
+                    _uiState.value = DeliveryUiState.Success(deliveries)
+                }
+        }
+    }
+
+    fun updateDeliveryStatus(id: String, newStatus: String) {
+        viewModelScope.launch {
+            try {
+                repository.updateDeliveryStatus(id, newStatus)
+                loadDeliveries() // Reload to reflect changes
+            } catch (e: Exception) {
+                // Ideally handle error via a side-effect channel
+            }
+        }
+    }
+}
+
+class DeliveryViewModelFactory(
+    private val repository: DeliveryRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(DeliveryViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return DeliveryViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

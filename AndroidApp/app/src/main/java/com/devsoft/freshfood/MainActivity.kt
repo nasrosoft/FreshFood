@@ -1,6 +1,7 @@
 package com.devsoft.freshfood
 
 import android.os.Bundle
+import com.devsoft.freshfood.ui.theme.FreshFoodTheme
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +42,9 @@ class MainActivity : ComponentActivity() {
         val salesRepo = SalesRepositoryImpl(supabaseClient)
         val customerRepo = CustomerRepositoryImpl(supabaseClient)
         val dashboardRepo = DashboardRepositoryImpl(supabaseClient)
+        val purchaseRepo = PurchaseRepositoryImpl(supabaseClient)
+        val deliveryRepo = DeliveryRepositoryImpl(supabaseClient)
+        val inventoryRepo = InventoryRepositoryImpl(supabaseClient)
 
         // Factories
         val authFactory = AuthViewModelFactory(authRepo)
@@ -48,9 +52,13 @@ class MainActivity : ComponentActivity() {
         val prodFactory = ProductsViewModelFactory(productRepo)
         val posFactory = PosViewModelFactory(salesRepo)
         val custFactory = CustomersViewModelFactory(customerRepo)
-
+        val purchaseFactory = com.devsoft.freshfood.presentation.purchases.PurchaseViewModelFactory(purchaseRepo)
+        val deliveryFactory = com.devsoft.freshfood.presentation.deliveries.DeliveryViewModelFactory(deliveryRepo)
+        val inventoryFactory = com.devsoft.freshfood.presentation.inventory.InventoryViewModelFactory(inventoryRepo)
+        val returnsFactory = com.devsoft.freshfood.presentation.inventory.ReturnsViewModelFactory(inventoryRepo)
+        
         setContent {
-            MaterialTheme {
+            FreshFoodTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     val authViewModel: AuthViewModel = viewModel(factory = authFactory)
                     val authState by authViewModel.authState.collectAsState()
@@ -60,7 +68,11 @@ class MainActivity : ComponentActivity() {
                             dashboardViewModel = viewModel(factory = dashFactory),
                             productsViewModel = viewModel(factory = prodFactory),
                             posViewModel = viewModel(factory = posFactory),
-                            customersViewModel = viewModel(factory = custFactory)
+                            customersViewModel = viewModel(factory = custFactory),
+                            purchaseViewModel = viewModel(factory = purchaseFactory),
+                            deliveryViewModel = viewModel(factory = deliveryFactory),
+                            inventoryViewModel = viewModel(factory = inventoryFactory),
+                            returnsViewModel = viewModel(factory = returnsFactory)
                         )
                     } else {
                         LoginScreen(

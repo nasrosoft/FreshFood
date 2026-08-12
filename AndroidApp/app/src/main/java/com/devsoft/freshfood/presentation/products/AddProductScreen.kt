@@ -15,10 +15,12 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
+    viewModel: com.devsoft.freshfood.presentation.products.ProductsViewModel,
+    initialBarcode: String? = null,
     onBack: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var sku by remember { mutableStateOf("") }
+    var sku by remember { mutableStateOf(initialBarcode ?: "") }
     var sellPrice by remember { mutableStateOf("") }
     var costPrice by remember { mutableStateOf("") }
     var currentStock by remember { mutableStateOf("") }
@@ -54,7 +56,20 @@ fun AddProductScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = { onBack() },
+                onClick = { 
+                    if (name.isNotBlank()) {
+                        val product = com.devsoft.freshfood.domain.model.Product(
+                            id = java.util.UUID.randomUUID().toString(),
+                            name = name,
+                            barcode = sku.ifBlank { null },
+                            selling_price = sellPrice.toDoubleOrNull() ?: 0.0,
+                            purchase_price = costPrice.toDoubleOrNull() ?: 0.0,
+                            current_stock = currentStock.toIntOrNull() ?: 0
+                        )
+                        viewModel.addProduct(product)
+                        onBack()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 Text("Save Product")
