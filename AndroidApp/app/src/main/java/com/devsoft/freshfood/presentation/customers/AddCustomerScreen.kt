@@ -28,7 +28,10 @@ fun AddCustomerScreen(
             TopAppBar(
                 title = { Text("Add New Customer") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+                },
+                actions = {
+                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,

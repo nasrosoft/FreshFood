@@ -1,20 +1,16 @@
 package com.devsoft.freshfood.data.repository
 
+import com.devsoft.freshfood.data.local.FreshFoodDatabase
 import com.devsoft.freshfood.domain.repository.DashboardRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.coroutines.flow.first
 
 class DashboardRepositoryImpl(
-    private val supabase: SupabaseClient
+    private val database: FreshFoodDatabase
 ) : DashboardRepository {
 
     override suspend fun getTodaySalesTotal(): Double {
-        // In a real implementation, you would filter sales by today's date.
-        // For scaffolding, we fetch all sales and sum.
-        val sales = supabase.postgrest["sales"].select().decodeList<JsonObject>()
-        return sales.sumOf { it["total_amount"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0 }
+        val sales = database.saleDao().getAllSales().first() // Use first() to get current list from flow
+        return sales.sumOf { it.total_amount }
     }
 
     override suspend fun getTodayProfitTotal(): Double {
@@ -24,16 +20,12 @@ class DashboardRepositoryImpl(
     }
 
     override suspend fun getTotalCustomerCredit(): Double {
-        val customers = supabase.postgrest["customers"].select().decodeList<JsonObject>()
-        return customers.sumOf { it["current_credit"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0 }
+        val customers = database.customerDao().getAllCustomers().first()
+        return customers.sumOf { it.current_credit }
     }
 
     override suspend fun getLowStockCount(): Int {
-        val products = supabase.postgrest["products"].select().decodeList<JsonObject>()
-        return products.count { 
-            val current = it["current_stock"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
-            val min = it["min_stock"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
-            current <= min
-        }
+        val products = database.productDao().getAllProducts().first()
+        return products.count { it.current_stock <= it.min_stock }
     }
 }

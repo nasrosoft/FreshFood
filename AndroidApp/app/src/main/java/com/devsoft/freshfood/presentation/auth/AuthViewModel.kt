@@ -37,6 +37,12 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             _authState.value = AuthState.Idle
         }
     }
+
+    fun clearError() {
+        if (_authState.value is AuthState.Error) {
+            _authState.value = AuthState.Idle
+        }
+    }
 }
 
 class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelProvider.Factory {

@@ -14,7 +14,7 @@ data class Purchase(
 
 @Serializable
 data class PurchaseItem(
-    val id: String? = null,
+    val id: String? = null, // Can be generated locally
     val purchase_id: String? = null,
     val product_id: String,
     val batch_id: String? = null,
@@ -25,8 +25,11 @@ data class PurchaseItem(
 
 @Serializable
 data class PurchaseRequest(
+    val id: String, // Added UUID for idempotency
     val supplier_id: String? = null,
     val invoice_number: String? = null,
     val user_id: String,
-    val items: List<PurchaseItem>
+    val total_amount: Double,
+    val items: List<PurchaseItem>,
+    val created_at: String? = null
 )

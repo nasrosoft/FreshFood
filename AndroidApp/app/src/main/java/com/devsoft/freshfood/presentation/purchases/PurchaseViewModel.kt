@@ -53,9 +53,11 @@ class PurchaseViewModel(
         viewModelScope.launch {
             val totalAmount = currentState.items.sumOf { it.quantity * it.purchase_price }
             val request = PurchaseRequest(
+                id = java.util.UUID.randomUUID().toString(),
                 supplier_id = currentState.selectedSupplierId,
                 invoice_number = currentState.invoiceNumber.ifBlank { "INV-${System.currentTimeMillis()}" },
                 user_id = "00000000-0000-0000-0000-000000000000", // MOCK USER
+                total_amount = totalAmount,
                 items = currentState.items
             )
 

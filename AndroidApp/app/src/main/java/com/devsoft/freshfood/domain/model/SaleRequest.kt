@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SaleRequest(
+    val id: String,
     val customer_id: String? = null,
     val user_id: String? = null,
     val total_amount: Double,
@@ -11,11 +12,15 @@ data class SaleRequest(
     val credit_amount: Double,
     val payment_method: String,
     val items: List<SaleItemRequest>,
-    val create_delivery: Boolean = false
+    val create_delivery: Boolean = false,
+    val payment_id: String? = null,
+    val credit_transaction_id: String? = null,
+    val created_at: String? = null
 )
 
 @Serializable
 data class SaleItemRequest(
+    val id: String,
     val product_id: String,
     val quantity: Int,
     val unit_price: Double

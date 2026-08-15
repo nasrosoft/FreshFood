@@ -110,6 +110,7 @@ class PosViewModel(
         viewModelScope.launch {
             val itemsReq = currentState.cartItems.map {
                 SaleItemRequest(
+                    id = java.util.UUID.randomUUID().toString(),
                     product_id = it.product.id,
                     quantity = it.quantity,
                     unit_price = it.product.selling_price
@@ -117,6 +118,7 @@ class PosViewModel(
             }
             
             val saleReq = SaleRequest(
+                id = java.util.UUID.randomUUID().toString(),
                 customer_id = customerId,
                 user_id = null, // Authentication not yet implemented
                 total_amount = currentState.totalAmount,

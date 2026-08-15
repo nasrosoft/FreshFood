@@ -27,9 +27,12 @@ fun ReturnsScreen(
             TopAppBar(
                 title = { Text("Customer Returns", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
+IconButton(onClick = onOpenDrawer) {
                         Icon(Icons.Filled.Menu, contentDescription = "Menu")
                     }
+                },
+                actions = {
+                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,

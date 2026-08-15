@@ -21,9 +21,12 @@ fun ProductDetailsScreen(
             TopAppBar(
                 title = { Text(product?.name ?: "Product Details") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,

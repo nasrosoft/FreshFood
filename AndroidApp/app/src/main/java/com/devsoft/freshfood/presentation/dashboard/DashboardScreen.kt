@@ -37,6 +37,9 @@ fun DashboardScreen(
                         Icon(Icons.Filled.Menu, contentDescription = "Menu")
                     }
                 },
+                actions = {
+                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,

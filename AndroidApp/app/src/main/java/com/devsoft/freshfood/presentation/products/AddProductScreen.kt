@@ -30,7 +30,10 @@ fun AddProductScreen(
             TopAppBar(
                 title = { Text("Add New Product") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
+                },
+                actions = {
+                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,

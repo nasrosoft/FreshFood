@@ -49,8 +49,16 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
         
         if (authState is AuthState.Error) {
-            Text((authState as AuthState.Error).message, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(8.dp))
+            AlertDialog(
+                onDismissRequest = { viewModel.clearError() },
+                title = { Text("Error") },
+                text = { Text("wrong password") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.clearError() }) {
+                        Text("OK")
+                    }
+                }
+            )
         }
 
         Button(

@@ -35,9 +35,12 @@ fun PurchaseEntryScreen(
             TopAppBar(
                 title = { Text("Enter Purchase / Stock") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -129,30 +132,95 @@ fun PurchaseEntryScreen(
             onAdd = { product, qty, price, expDate ->
                 viewModel.addItem(product, qty, price, expDate)
                 showAddItemDialog = false
+            },
+            onAddNewProduct = { name ->
+                val newProduct = Product(
+                    id = java.util.UUID.randomUUID().toString(),
+                    name = name,
+                    purchase_price = 0.0,
+                    selling_price = 0.0
+                )
+                productsViewModel.addProduct(newProduct)
+                newProduct
             }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddItemDialog(
     products: List<Product>,
     onDismiss: () -> Unit,
-    onAdd: (Product, Int, Double, String) -> Unit
+    onAdd: (Product, Int, Double, String) -> Unit,
+    onAddNewProduct: (String) -> Product
 ) {
-    // simplified dialog logic
-    var selectedProduct by remember { mutableStateOf<Product?>(products.firstOrNull()) }
+    var expanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedProduct by remember { mutableStateOf<Product?>(null) }
+    
     var quantity by remember { mutableStateOf("10") }
-    var purchasePrice by remember { mutableStateOf(selectedProduct?.purchase_price?.toString() ?: "0") }
-    var expirationDate by remember { mutableStateOf("2026-12-31") } // Placeholder for date picker
+    var purchasePrice by remember { mutableStateOf("0") }
+    var expirationDate by remember { mutableStateOf("2026-12-31") }
+
+    val filteredProducts = if (searchQuery.isBlank()) {
+        products
+    } else {
+        products.filter {
+            it.name.contains(searchQuery, ignoreCase = true) || 
+            it.barcode?.contains(searchQuery, ignoreCase = true) == true
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Item to Purchase") },
         text = {
             Column {
-                // In a real app, this would be a DropdownMenu or Searchable List
-                Text("Product: ${selectedProduct?.name ?: "Select a product"}")
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { 
+                            searchQuery = it
+                            expanded = true
+                            selectedProduct = null
+                        },
+                        label = { Text("Search Product by name or barcode") },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        singleLine = true
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        filteredProducts.forEach { product ->
+                            DropdownMenuItem(
+                                text = { Text(product.name) },
+                                onClick = {
+                                    selectedProduct = product
+                                    searchQuery = product.name
+                                    purchasePrice = product.purchase_price.toString()
+                                    expanded = false
+                                }
+                            )
+                        }
+                        if (searchQuery.isNotBlank() && filteredProducts.none { it.name.equals(searchQuery, ignoreCase = true) }) {
+                            DropdownMenuItem(
+                                text = { Text("Add '$searchQuery' as new product", color = MaterialTheme.colorScheme.primary) },
+                                onClick = {
+                                    val newProduct = onAddNewProduct(searchQuery)
+                                    selectedProduct = newProduct
+                                    searchQuery = newProduct.name
+                                    purchasePrice = "0.0"
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = quantity,

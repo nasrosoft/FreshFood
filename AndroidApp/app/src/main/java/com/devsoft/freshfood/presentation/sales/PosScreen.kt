@@ -215,6 +215,9 @@ fun PosScreen(
                         Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.Black)
                     }
                 },
+                actions = {
+                    com.devsoft.freshfood.presentation.components.GlobalSyncButton(tint = Color.Black)
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White
                 )
