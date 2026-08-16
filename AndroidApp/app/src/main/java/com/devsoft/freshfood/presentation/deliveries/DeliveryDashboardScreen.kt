@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.devsoft.freshfood.domain.model.DeliveryOrderWithDetails
@@ -30,8 +32,15 @@ fun DeliveryDashboardScreen(
     var orderToDelete by remember { mutableStateOf<String?>(null) }
     val tabs = listOf("Pending", "Out for Delivery", "Delivered")
 
+    val context = LocalContext.current
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.loadDeliveries()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.errorMessage.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
     }
 
     Scaffold(

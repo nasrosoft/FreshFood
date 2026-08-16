@@ -536,6 +536,7 @@ CREATE POLICY "Sellers can read own sales" ON sales FOR SELECT USING (user_id = 
 -- Delivery: Can read assigned orders, create payments
 CREATE POLICY "Delivery can read assigned orders" ON delivery_orders FOR SELECT USING (delivery_employee_id = auth.uid() OR is_admin());
 CREATE POLICY "Delivery can update assigned orders" ON delivery_orders FOR UPDATE USING (delivery_employee_id = auth.uid() OR is_admin());
+CREATE POLICY "Admin can delete delivery_orders" ON delivery_orders FOR DELETE USING (is_admin());
 
 -- Manager access (Simplified: Similar to admin but restricted in UI usually, or separate policy)
 -- Note: In a real environment, you'll flesh out every CRUD policy per role perfectly.

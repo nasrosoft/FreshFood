@@ -62,8 +62,10 @@ class DeliveryViewModel(
         viewModelScope.launch {
             try {
                 repository.deleteDeliveryOrder(id)
+                loadDeliveries() // Refresh UI after completion
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.emit("Error deleting delivery: ${e.message}")
             }
         }
     }
