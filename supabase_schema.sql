@@ -366,6 +366,7 @@ DECLARE
     v_batch RECORD;
     v_qty_to_take INT;
     v_cost_price DECIMAL(12,2);
+    v_delivery_id UUID;
 BEGIN
     -- Generate simple invoice number (in production, might need sequences)
     v_invoice_number := 'INV-' || to_char(NOW(), 'YYYYMMDD-HH24MISS');
@@ -454,7 +455,25 @@ BEGIN
         VALUES (v_customer_id, (sale_data->>'paid_amount')::DECIMAL, sale_data->>'payment_method', v_sale_id, v_user_id);
     END IF;
 
-    RETURN jsonb_build_object('success', true, 'sale_id', v_sale_id, 'invoice_number', v_invoice_number);
+    -- 4. Handle Delivery Creation
+    IF (sale_data->>'create_delivery')::BOOLEAN = true THEN
+        INSERT INTO delivery_orders (sale_id, customer_id, delivery_employee_id, status)
+        VALUES (
+            v_sale_id, 
+            v_customer_id, 
+            (sale_data->>'delivery_employee_id')::UUID, 
+            'PENDING'
+        ) RETURNING id INTO v_delivery_id;
+
+        -- Insert delivery items mirroring sale items
+        FOR v_item IN SELECT * FROM jsonb_array_elements(sale_data->'items')
+        LOOP
+            INSERT INTO delivery_items (delivery_order_id, product_id, quantity)
+            VALUES (v_delivery_id, (v_item->>'product_id')::UUID, (v_item->>'quantity')::INT);
+        END LOOP;
+    END IF;
+
+    RETURN jsonb_build_object('success', true, 'sale_id', v_sale_id, 'invoice_number', v_invoice_number, 'delivery_id', v_delivery_id);
 EXCEPTION WHEN OTHERS THEN
     -- In PostgreSQL, raising an exception rolls back the transaction.
     RAISE EXCEPTION 'Transaction failed: %', SQLERRM;
