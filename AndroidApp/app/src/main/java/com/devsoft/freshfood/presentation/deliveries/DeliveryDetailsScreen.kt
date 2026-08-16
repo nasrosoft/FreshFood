@@ -30,6 +30,7 @@ fun DeliveryDetailsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showPaymentDialog by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
     var selectedPaymentMethod by remember { mutableStateOf("CASH") }
     
     val modifiedQuantities = remember { mutableStateMapOf<String, Int>() }
@@ -133,7 +134,7 @@ IconButton(onClick = onBack) {
                     }
                     "OUT_FOR_DELIVERY" -> {
                         Button(
-                            onClick = { showPaymentDialog = true },
+                            onClick = { showConfirmDialog = true },
                             modifier = Modifier.fillMaxWidth().height(56.dp)
                         ) {
                             Text("Confirm Delivered")
@@ -141,11 +142,10 @@ IconButton(onClick = onBack) {
                     }
                     "DELIVERED" -> {
                         Button(
-                            onClick = { },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            enabled = false
+                            onClick = { showPaymentDialog = true },
+                            modifier = Modifier.fillMaxWidth().height(56.dp)
                         ) {
-                            Text("Delivery Completed")
+                            Text("Print Receipt")
                         }
                     }
                 }
@@ -153,10 +153,31 @@ IconButton(onClick = onBack) {
         }
     }
 
+    if (showConfirmDialog && details != null) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Confirm Delivery") },
+            text = { Text("Are you sure you want to mark this delivery as completed?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showConfirmDialog = false
+                    viewModel.updateDeliveryItemsAndComplete(details.order.id, modifiedQuantities)
+                }) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (showPaymentDialog && details != null) {
         AlertDialog(
             onDismissRequest = { showPaymentDialog = false },
-            title = { Text("Confirm Delivery") },
+            title = { Text("Print Receipt") },
             text = {
                 Column {
                     Text("Select Payment Method:")
@@ -180,10 +201,6 @@ IconButton(onClick = onBack) {
                 TextButton(onClick = {
                     showPaymentDialog = false
                     
-                    // Save modified quantities and complete delivery
-                    viewModel.updateDeliveryItemsAndComplete(details.order.id, modifiedQuantities)
-                    
-                    // Create an updated details object for the receipt
                     val updatedItems = details.items.mapNotNull { detail ->
                         val newQty = modifiedQuantities[detail.item.product_id] ?: detail.item.quantity
                         if (newQty > 0) {
@@ -206,7 +223,7 @@ IconButton(onClick = onBack) {
                         context.startActivity(android.content.Intent.createChooser(intent, "Print / Share Receipt"))
                     }
                 }) {
-                    Text("Confirm & Print")
+                    Text("Print")
                 }
             },
             dismissButton = {
