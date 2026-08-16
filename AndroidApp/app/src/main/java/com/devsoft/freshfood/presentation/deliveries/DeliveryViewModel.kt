@@ -65,6 +65,7 @@ class DeliveryViewModel(
         viewModelScope.launch {
             try {
                 repository.updateDeliveryItemsAndComplete(orderId, modifiedQuantities)
+                loadDeliveries() // Refresh UI after completion
             } catch (e: Exception) {
                 e.printStackTrace()
             }
