@@ -3,15 +3,19 @@ package com.devsoft.freshfood.presentation.purchases
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -129,8 +133,14 @@ IconButton(onClick = onBack) {
         AddItemDialog(
             products = productsState.products,
             onDismiss = { showAddItemDialog = false },
-            onAdd = { product, qty, price, expDate ->
-                viewModel.addItem(product, qty, price, expDate)
+            onAdd = { product, qty, pPrice, sPrice, expDate ->
+                // Update product's prices based on the purchase entry
+                val updatedProduct = product.copy(
+                    purchase_price = pPrice,
+                    selling_price = sPrice
+                )
+                productsViewModel.updateProduct(updatedProduct)
+                viewModel.addItem(updatedProduct, qty, pPrice, expDate)
                 showAddItemDialog = false
             },
             onAddNewProduct = { name ->
@@ -152,7 +162,7 @@ IconButton(onClick = onBack) {
 fun AddItemDialog(
     products: List<Product>,
     onDismiss: () -> Unit,
-    onAdd: (Product, Int, Double, String) -> Unit,
+    onAdd: (Product, Int, Double, Double, String) -> Unit,
     onAddNewProduct: (String) -> Product
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -161,6 +171,8 @@ fun AddItemDialog(
     
     var quantity by remember { mutableStateOf("10") }
     var purchasePrice by remember { mutableStateOf("0") }
+    var sellingPrice by remember { mutableStateOf("0") }
+    var marginPercentage by remember { mutableStateOf("") }
     var expirationDate by remember { mutableStateOf("2026-12-31") }
 
     val filteredProducts = if (searchQuery.isBlank()) {
@@ -176,11 +188,8 @@ fun AddItemDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Item to Purchase") },
         text = {
-            Column {
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Box {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { 
@@ -189,12 +198,13 @@ fun AddItemDialog(
                             selectedProduct = null
                         },
                         label = { Text("Search Product by name or barcode") },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
-                    ExposedDropdownMenu(
+                    DropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+                        properties = PopupProperties(focusable = false)
                     ) {
                         filteredProducts.forEach { product ->
                             DropdownMenuItem(
@@ -203,6 +213,7 @@ fun AddItemDialog(
                                     selectedProduct = product
                                     searchQuery = product.name
                                     purchasePrice = product.purchase_price.toString()
+                                    sellingPrice = product.selling_price.toString()
                                     expanded = false
                                 }
                             )
@@ -215,6 +226,7 @@ fun AddItemDialog(
                                     selectedProduct = newProduct
                                     searchQuery = newProduct.name
                                     purchasePrice = "0.0"
+                                    sellingPrice = "0.0"
                                     expanded = false
                                 }
                             )
@@ -230,8 +242,36 @@ fun AddItemDialog(
                 )
                 OutlinedTextField(
                     value = purchasePrice,
-                    onValueChange = { purchasePrice = it },
+                    onValueChange = { newValue -> 
+                        purchasePrice = newValue 
+                        val p = newValue.toDoubleOrNull() ?: 0.0
+                        val m = marginPercentage.toDoubleOrNull()
+                        if (m != null) {
+                            val calculated = p * (1 + m / 100)
+                            sellingPrice = (Math.round(calculated * 10.0) / 10.0).toString()
+                        }
+                    },
                     label = { Text("Purchase Price") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                OutlinedTextField(
+                    value = marginPercentage,
+                    onValueChange = { newValue -> 
+                        marginPercentage = newValue
+                        val p = purchasePrice.toDoubleOrNull() ?: 0.0
+                        val m = newValue.toDoubleOrNull()
+                        if (m != null) {
+                            val calculated = p * (1 + m / 100)
+                            sellingPrice = (Math.round(calculated * 10.0) / 10.0).toString()
+                        }
+                    },
+                    label = { Text("Margin Percentage (%)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                OutlinedTextField(
+                    value = sellingPrice,
+                    onValueChange = { sellingPrice = it },
+                    label = { Text("Selling Price") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 OutlinedTextField(
@@ -244,7 +284,13 @@ fun AddItemDialog(
         confirmButton = {
             Button(onClick = {
                 selectedProduct?.let {
-                    onAdd(it, quantity.toIntOrNull() ?: 0, purchasePrice.toDoubleOrNull() ?: 0.0, expirationDate)
+                    onAdd(
+                        it, 
+                        quantity.toIntOrNull() ?: 0, 
+                        purchasePrice.toDoubleOrNull() ?: 0.0, 
+                        sellingPrice.toDoubleOrNull() ?: 0.0,
+                        expirationDate
+                    )
                 }
             }) { Text("Add") }
         },

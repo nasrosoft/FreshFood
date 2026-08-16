@@ -9,6 +9,7 @@ import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
+import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
@@ -39,6 +40,8 @@ public final class DeliveryDao_Impl implements DeliveryDao {
   private final EntityInsertionAdapter<DeliveryItemEntity> __insertionAdapterOfDeliveryItemEntity;
 
   private final EntityDeletionOrUpdateAdapter<DeliveryOrderEntity> __updateAdapterOfDeliveryOrderEntity;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteDeliveryOrderById;
 
   public DeliveryDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -142,6 +145,14 @@ public final class DeliveryDao_Impl implements DeliveryDao {
         statement.bindString(8, entity.getId());
       }
     };
+    this.__preparedStmtOfDeleteDeliveryOrderById = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM delivery_orders WHERE id = ?";
+        return _query;
+      }
+    };
   }
 
   @Override
@@ -196,6 +207,32 @@ public final class DeliveryDao_Impl implements DeliveryDao {
           return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteDeliveryOrderById(final String id,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteDeliveryOrderById.acquire();
+        int _argIndex = 1;
+        _stmt.bindString(_argIndex, id);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteDeliveryOrderById.release(_stmt);
         }
       }
     }, $completion);

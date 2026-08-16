@@ -13,19 +13,44 @@ import kotlinx.coroutines.launch
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    object Authenticated : AuthState()
+    data class Authenticated(val role: String, val userId: String) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
-class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
-    private val _authState = MutableStateFlow<AuthState>(if(repository.isUserLoggedIn()) AuthState.Authenticated else AuthState.Idle)
+class AuthViewModel(
+    private val repository: AuthRepository,
+    private val profileRepository: com.devsoft.freshfood.domain.repository.ProfileRepository
+) : ViewModel() {
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    init {
+        checkAuthStatus()
+    }
+
+    private fun checkAuthStatus() {
+        viewModelScope.launch {
+            if (repository.isUserLoggedIn()) {
+                val userId = repository.getCurrentUserId()
+                if (userId != null) {
+                    val profile = profileRepository.getProfileById(userId)
+                    _authState.value = AuthState.Authenticated(profile?.role ?: "SELLER", userId)
+                } else {
+                    _authState.value = AuthState.Idle
+                }
+            } else {
+                _authState.value = AuthState.Idle
+            }
+        }
+    }
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             repository.login(email, password).fold(
-                onSuccess = { _authState.value = AuthState.Authenticated },
+                onSuccess = { 
+                    checkAuthStatus()
+                },
                 onFailure = { _authState.value = AuthState.Error(it.message ?: "Login failed") }
             )
         }
@@ -45,8 +70,11 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 }
 
-class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelProvider.Factory {
+class AuthViewModelFactory(
+    private val repository: AuthRepository,
+    private val profileRepository: com.devsoft.freshfood.domain.repository.ProfileRepository
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return AuthViewModel(repository) as T
+        return AuthViewModel(repository, profileRepository) as T
     }
 }

@@ -9,6 +9,9 @@ import com.devsoft.freshfood.data.local.entity.SaleEntity
 import com.devsoft.freshfood.data.local.entity.SaleItemEntity
 import com.devsoft.freshfood.data.local.entity.StockMovementEntity
 import com.devsoft.freshfood.data.local.entity.SyncQueueEntity
+import com.devsoft.freshfood.data.local.entity.DeliveryOrderEntity
+import com.devsoft.freshfood.data.local.entity.DeliveryItemEntity
+import com.devsoft.freshfood.data.local.entity.NotificationEntity
 import com.devsoft.freshfood.domain.model.SaleRequest
 import com.devsoft.freshfood.domain.repository.SalesRepository
 import com.devsoft.freshfood.utils.DeviceUtil
@@ -99,6 +102,45 @@ class SalesRepositoryImpl(
             
             val deviceId = DeviceUtil.getDeviceId(context)
 
+            var deliveryOrderEntity: DeliveryOrderEntity? = null
+            val deliveryItems = mutableListOf<DeliveryItemEntity>()
+            var notificationEntity: NotificationEntity? = null
+            
+            if (saleRequest.create_delivery) {
+                val deliveryOrderId = UUID.randomUUID().toString()
+                deliveryOrderEntity = DeliveryOrderEntity(
+                    id = deliveryOrderId,
+                    customer_id = saleRequest.customer_id,
+                    delivery_employee_id = saleRequest.delivery_employee_id,
+                    status = "PENDING",
+                    notes = "Created from POS Sale: INV-${saleId.take(8).uppercase()}",
+                    created_at = createdAt
+                )
+                
+                saleRequest.items.forEach { item ->
+                    deliveryItems.add(
+                        DeliveryItemEntity(
+                            id = UUID.randomUUID().toString(),
+                            delivery_order_id = deliveryOrderId,
+                            product_id = item.product_id,
+                            quantity = item.quantity,
+                            created_at = createdAt
+                        )
+                    )
+                }
+                
+                if (saleRequest.delivery_employee_id != null) {
+                    notificationEntity = NotificationEntity(
+                        id = UUID.randomUUID().toString(),
+                        user_id = saleRequest.delivery_employee_id,
+                        title = "New Delivery Assigned",
+                        message = "You have been assigned a new delivery for Invoice INV-${saleId.take(8).uppercase()}.",
+                        is_read = false,
+                        created_at = createdAt
+                    )
+                }
+            }
+
             // 4. Atomic Transaction
             database.withTransaction {
                 database.saleDao().insertSale(saleEntity)
@@ -108,7 +150,6 @@ class SalesRepositoryImpl(
                 paymentEntity?.let { database.paymentDao().insertPayment(it) }
                 creditTxEntity?.let { database.creditTransactionDao().insertCreditTransaction(it) }
                 
-                // Enqueue the SaleRequest RPC payload
                 val syncQueueEntity = SyncQueueEntity(
                     entity_type = "rpc_process_sale",
                     entity_id = saleId,
@@ -117,6 +158,56 @@ class SalesRepositoryImpl(
                     device_id = deviceId
                 )
                 database.syncQueueDao().insert(syncQueueEntity)
+                
+                deliveryOrderEntity?.let {
+                    database.deliveryDao().insertDeliveryOrder(it)
+                    database.deliveryDao().insertDeliveryItems(deliveryItems)
+                    
+                    val deliveryQueueOp = SyncQueueEntity(
+                        entity_type = "delivery_orders",
+                        entity_id = it.id,
+                        operation = "CREATE",
+                        payload = Json.encodeToString(com.devsoft.freshfood.domain.model.DeliveryOrder(
+                            id = it.id,
+                            customer_id = it.customer_id,
+                            delivery_employee_id = it.delivery_employee_id,
+                            status = it.status,
+                            notes = it.notes,
+                            created_at = it.created_at
+                        )),
+                        device_id = deviceId
+                    )
+                    database.syncQueueDao().insert(deliveryQueueOp)
+                    
+                    deliveryItems.forEach { item ->
+                        val itemOp = SyncQueueEntity(
+                            entity_type = "delivery_items",
+                            entity_id = item.id,
+                            operation = "CREATE",
+                            payload = Json.encodeToString(com.devsoft.freshfood.domain.model.DeliveryItem(
+                                id = item.id,
+                                delivery_order_id = item.delivery_order_id,
+                                product_id = item.product_id,
+                                quantity = item.quantity,
+                                created_at = item.created_at
+                            )),
+                            device_id = deviceId
+                        )
+                        database.syncQueueDao().insert(itemOp)
+                    }
+                }
+                
+                notificationEntity?.let {
+                    database.notificationDao().insertNotifications(listOf(it))
+                    val notifOp = SyncQueueEntity(
+                        entity_type = "notifications",
+                        entity_id = it.id,
+                        operation = "CREATE",
+                        payload = Json.encodeToString(it),
+                        device_id = deviceId
+                    )
+                    database.syncQueueDao().insert(notifOp)
+                }
                 
                 // Update local customer credit locally if needed (omitted for brevity, assume UI calculates from transactions)
             }

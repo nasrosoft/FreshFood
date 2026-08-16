@@ -87,6 +87,15 @@ class PurchaseRepositoryImpl(
                 database.stockDao().insertStockBatches(stockBatches)
                 database.stockDao().insertStockMovements(stockMovements)
                 
+                // Update product stock locally
+                request.items.forEach { item ->
+                    val product = database.productDao().getProductById(item.product_id)
+                    if (product != null) {
+                        val newStock = product.current_stock + item.quantity
+                        database.productDao().updateProduct(product.copy(current_stock = newStock))
+                    }
+                }
+                
                 // Enqueue the PurchaseRequest RPC payload for sync
                 val syncQueueEntity = SyncQueueEntity(
                     entity_type = "rpc_process_purchase",

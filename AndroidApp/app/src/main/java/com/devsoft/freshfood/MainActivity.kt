@@ -90,11 +90,16 @@ class MainActivity : ComponentActivity() {
             context = applicationContext
         )
 
+        val profileRepo = com.devsoft.freshfood.data.repository.ProfileRepositoryImpl(
+            database = localDatabase,
+            supabase = supabaseClient
+        )
+
         // Factories
-        val authFactory = AuthViewModelFactory(authRepo)
+        val authFactory = AuthViewModelFactory(authRepo, profileRepo)
         val dashFactory = DashboardViewModelFactory(dashboardRepo)
         val prodFactory = ProductsViewModelFactory(productRepo)
-        val posFactory = PosViewModelFactory(salesRepo)
+        val posFactory = PosViewModelFactory(salesRepo, profileRepo)
         val custFactory = CustomersViewModelFactory(customerRepo)
         val purchaseFactory = com.devsoft.freshfood.presentation.purchases.PurchaseViewModelFactory(purchaseRepo)
         val deliveryFactory = com.devsoft.freshfood.presentation.deliveries.DeliveryViewModelFactory(deliveryRepo)
@@ -108,7 +113,11 @@ class MainActivity : ComponentActivity() {
                     val authState by authViewModel.authState.collectAsState()
 
                     if (authState is AuthState.Authenticated) {
+                        val userRole = (authState as AuthState.Authenticated).role
+                        val userId = (authState as AuthState.Authenticated).userId
                         MainAppScreen(
+                            userId = userId,
+                            userRole = userRole,
                             dashboardViewModel = viewModel(factory = dashFactory),
                             productsViewModel = viewModel(factory = prodFactory),
                             posViewModel = viewModel(factory = posFactory),
@@ -116,7 +125,9 @@ class MainActivity : ComponentActivity() {
                             purchaseViewModel = viewModel(factory = purchaseFactory),
                             deliveryViewModel = viewModel(factory = deliveryFactory),
                             inventoryViewModel = viewModel(factory = inventoryFactory),
-                            returnsViewModel = viewModel(factory = returnsFactory)
+                            returnsViewModel = viewModel(factory = returnsFactory),
+                            profileRepository = profileRepo,
+                            onLogout = { authViewModel.logout() }
                         )
                     } else {
                         LoginScreen(

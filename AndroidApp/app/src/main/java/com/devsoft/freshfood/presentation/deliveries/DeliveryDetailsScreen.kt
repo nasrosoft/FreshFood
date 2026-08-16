@@ -7,8 +7,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -23,6 +26,9 @@ fun DeliveryDetailsScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    var showPaymentDialog by remember { mutableStateOf(false) }
+    var selectedPaymentMethod by remember { mutableStateOf("CASH") }
 
     val details = (uiState as? DeliveryUiState.Success)?.deliveries?.find { it.order.id == deliveryId }
 
@@ -97,7 +103,7 @@ IconButton(onClick = onBack) {
                     }
                     "OUT_FOR_DELIVERY" -> {
                         Button(
-                            onClick = { viewModel.updateDeliveryStatus(details.order.id, "DELIVERED") },
+                            onClick = { showPaymentDialog = true },
                             modifier = Modifier.fillMaxWidth().height(56.dp)
                         ) {
                             Text("Confirm Delivered")
@@ -115,6 +121,59 @@ IconButton(onClick = onBack) {
                 }
             }
         }
+    }
+
+    if (showPaymentDialog && details != null) {
+        AlertDialog(
+            onDismissRequest = { showPaymentDialog = false },
+            title = { Text("Confirm Delivery") },
+            text = {
+                Column {
+                    Text("Select Payment Method:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = selectedPaymentMethod == "CASH",
+                            onClick = { selectedPaymentMethod = "CASH" }
+                        )
+                        Text("Espèces")
+                        Spacer(modifier = Modifier.width(16.dp))
+                        RadioButton(
+                            selected = selectedPaymentMethod == "CREDIT",
+                            onClick = { selectedPaymentMethod = "CREDIT" }
+                        )
+                        Text("Crédit")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPaymentDialog = false
+                    viewModel.updateDeliveryStatus(details.order.id, "DELIVERED")
+                    
+                    val uri = com.devsoft.freshfood.utils.PdfReceiptGenerator.generateDeliveryReceipt(
+                        context,
+                        details,
+                        selectedPaymentMethod
+                    )
+                    if (uri != null) {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(android.content.Intent.createChooser(intent, "Print / Share Receipt"))
+                    }
+                }) {
+                    Text("Confirm & Print")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaymentDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

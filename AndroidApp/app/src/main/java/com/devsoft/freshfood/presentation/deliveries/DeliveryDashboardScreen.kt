@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +20,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun DeliveryDashboardScreen(
     viewModel: DeliveryViewModel,
+    currentUserId: String?,
+    currentUserRole: String,
     onDeliveryClick: (String) -> Unit,
     onOpenDrawer: () -> Unit = {}
 ) {
@@ -79,7 +82,12 @@ IconButton(onClick = onOpenDrawer) {
                         2 -> listOf("DELIVERED", "PARTIALLY_DELIVERED")
                         else -> emptyList()
                     }
-                    val filteredOrders = state.deliveries.filter { it.order.status in filterStatus }
+                    val baseOrders = if (currentUserRole == "DELIVERY" && currentUserId != null) {
+                        state.deliveries.filter { it.order.delivery_employee_id == currentUserId }
+                    } else {
+                        state.deliveries
+                    }
+                    val filteredOrders = baseOrders.filter { it.order.status in filterStatus }
 
                     if (filteredOrders.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -94,7 +102,9 @@ IconButton(onClick = onOpenDrawer) {
                             items(filteredOrders) { details ->
                                 DeliveryOrderCard(
                                     details = details,
-                                    onClick = { onDeliveryClick(details.order.id) }
+                                    onClick = { onDeliveryClick(details.order.id) },
+                                    canDelete = currentUserRole == "ADMIN" && details.order.status in listOf("PENDING", "ASSIGNED", "OUT_FOR_DELIVERY"),
+                                    onDeleteClick = { viewModel.deleteDeliveryOrder(details.order.id) }
                                 )
                             }
                         }
@@ -107,7 +117,12 @@ IconButton(onClick = onOpenDrawer) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeliveryOrderCard(details: DeliveryOrderWithDetails, onClick: () -> Unit) {
+fun DeliveryOrderCard(
+    details: DeliveryOrderWithDetails,
+    onClick: () -> Unit,
+    canDelete: Boolean = false,
+    onDeleteClick: () -> Unit = {}
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,11 +130,22 @@ fun DeliveryOrderCard(details: DeliveryOrderWithDetails, onClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Order ID: ${details.order.id.take(8)}...", 
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = "Order ID: ${details.order.id.take(8)}...", 
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                if (canDelete) {
+                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete Order", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Customer: ${details.customer?.name ?: "Unknown"}",

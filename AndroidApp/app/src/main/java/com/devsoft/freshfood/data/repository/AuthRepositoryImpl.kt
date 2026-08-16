@@ -31,4 +31,8 @@ class AuthRepositoryImpl(
     override fun isUserLoggedIn(): Boolean {
         return supabase.auth.currentSessionOrNull() != null
     }
+
+    override fun getCurrentUserId(): String? {
+        return supabase.auth.currentSessionOrNull()?.user?.id
+    }
 }

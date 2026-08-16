@@ -8,4 +8,5 @@ interface DeliveryRepository {
     suspend fun getDeliveries(): Flow<List<DeliveryOrderWithDetails>>
     suspend fun getDeliveryById(id: String): DeliveryOrderWithDetails?
     suspend fun updateDeliveryStatus(id: String, newStatus: String)
+    suspend fun deleteDeliveryOrder(id: String)
 }

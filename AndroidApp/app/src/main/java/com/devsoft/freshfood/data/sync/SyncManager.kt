@@ -9,6 +9,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.flow.first
 
 class SyncManager(
     private val localDb: FreshFoodDatabase,
@@ -50,7 +55,10 @@ class SyncManager(
                 when (op.operation) {
                     "CREATE" -> {
                         val payload = json.decodeFromString<JsonObject>(op.payload!!)
-                        supabase.postgrest[op.entity_type].insert(payload)
+                        val cleanPayloadMap = payload.toMutableMap().apply {
+                            remove("deleted_at")
+                        }
+                        supabase.postgrest[op.entity_type].insert(JsonObject(cleanPayloadMap))
                     }
                     "UPDATE" -> {
                         val payload = json.decodeFromString<JsonObject>(op.payload!!)
@@ -59,6 +67,7 @@ class SyncManager(
                             remove("id")
                             remove("created_at")
                             remove("updated_at")
+                            remove("deleted_at")
                         }
                         val finalPayload = JsonObject(cleanPayloadMap)
                         
@@ -97,10 +106,21 @@ class SyncManager(
         // Example for products:
         try {
             val remoteProducts = supabase.postgrest["products"].select().decodeList<com.devsoft.freshfood.domain.model.Product>()
-            val entities = remoteProducts.map { com.devsoft.freshfood.data.local.entity.ProductEntity.fromDomainModel(it) }
+            val remoteEntities = remoteProducts.map { com.devsoft.freshfood.data.local.entity.ProductEntity.fromDomainModel(it) }
             
-            // Only insert products that do NOT have a pending local change
-            val entitiesToInsert = entities.filter { !pendingEntityIds.contains(it.id) }
+            // LOCAL IS MASTER FOR STOCK: Preserve local stock values
+            val localProductsList = localDb.productDao().getAllProducts().first()
+            val localStockMap = localProductsList.associate { it.id to it.current_stock }
+            
+            val entitiesToInsert = remoteEntities.map { remoteProd ->
+                val localStock = localStockMap[remoteProd.id]
+                if (localStock != null) {
+                    remoteProd.copy(current_stock = localStock)
+                } else {
+                    remoteProd
+                }
+            }.filter { !pendingEntityIds.contains(it.id) }
+            
             if (entitiesToInsert.isNotEmpty()) {
                 localDb.productDao().insertProducts(entitiesToInsert)
             }
@@ -122,6 +142,45 @@ class SyncManager(
             Log.e("SyncManager", "Failed to pull customers: ${e.message}")
         }
         
-        // Add other entities here using the same filtering pattern...
+        // Profiles
+        try {
+            val remoteProfiles = supabase.postgrest["profiles"].select().decodeList<com.devsoft.freshfood.data.local.entity.ProfileEntity>()
+            localDb.profileDao().insertProfiles(remoteProfiles)
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to pull profiles: ${e.message}")
+        }
+        
+        // Notifications
+        try {
+            val remoteNotifs = supabase.postgrest["notifications"].select().decodeList<com.devsoft.freshfood.data.local.entity.NotificationEntity>()
+            
+            // Check if any are new by filtering those not currently in DB
+            val existingNotifsFlow = localDb.notificationDao().getAllNotifications()
+            
+            localDb.notificationDao().insertNotifications(remoteNotifs)
+            
+            // Trigger Android notifications for unread ones (assuming background sync or opened app)
+            val unreadNotifs = remoteNotifs.filter { !it.is_read }
+            if (unreadNotifs.isNotEmpty()) {
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel("delivery_channel", "Delivery Notifications", NotificationManager.IMPORTANCE_HIGH)
+                    notificationManager.createNotificationChannel(channel)
+                }
+                
+                unreadNotifs.forEach { notif ->
+                    val builder = NotificationCompat.Builder(context, "delivery_channel")
+                        .setSmallIcon(android.R.drawable.ic_dialog_info)
+                        .setContentTitle(notif.title)
+                        .setContentText(notif.message)
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setAutoCancel(true)
+                        
+                    notificationManager.notify(notif.id.hashCode(), builder.build())
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to pull notifications: ${e.message}")
+        }
     }
 }

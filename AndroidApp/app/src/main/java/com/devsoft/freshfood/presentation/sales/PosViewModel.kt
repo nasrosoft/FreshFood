@@ -11,7 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import com.devsoft.freshfood.domain.repository.ProfileRepository
+import com.devsoft.freshfood.data.local.entity.ProfileEntity
 
 data class CartItem(
     val product: Product,
@@ -24,18 +31,30 @@ data class PosUiState(
     val isLoading: Boolean = false,
     val checkoutMessage: String? = null,
     val lastSaleItems: List<CartItem>? = null,
-    val lastSaleTotal: Double? = null
+    val lastSaleTotal: Double? = null,
+    val deliveryDrivers: List<ProfileEntity> = emptyList()
 )
 
 class PosViewModel(
-    private val salesRepository: SalesRepository
+    private val salesRepository: SalesRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(PosUiState())
-    val uiState: StateFlow<PosUiState> = _uiState.asStateFlow()
+    private val _cartState = MutableStateFlow(PosUiState())
+    
+    val uiState: StateFlow<PosUiState> = combine(
+        _cartState,
+        profileRepository.getProfilesByRole("DELIVERY")
+    ) { state, drivers ->
+        state.copy(deliveryDrivers = drivers)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = PosUiState()
+    )
 
     fun addToCart(product: Product) {
-        _uiState.update { state ->
+        _cartState.update { state ->
             val existingItem = state.cartItems.find { it.product.id == product.id }
             val newItems = if (existingItem != null) {
                 state.cartItems.map { 
@@ -49,7 +68,7 @@ class PosViewModel(
     }
 
     fun decreaseQuantity(product: Product) {
-        _uiState.update { state ->
+        _cartState.update { state ->
             val existingItem = state.cartItems.find { it.product.id == product.id }
             if (existingItem != null) {
                 val newItems = if (existingItem.quantity > 1) {
@@ -70,7 +89,7 @@ class PosViewModel(
             removeItem(product)
             return
         }
-        _uiState.update { state ->
+        _cartState.update { state ->
             val existingItem = state.cartItems.find { it.product.id == product.id }
             if (existingItem != null) {
                 val newItems = state.cartItems.map {
@@ -84,28 +103,28 @@ class PosViewModel(
     }
 
     fun removeItem(product: Product) {
-        _uiState.update { state ->
+        _cartState.update { state ->
             val newItems = state.cartItems.filter { it.product.id != product.id }
             state.copy(cartItems = newItems, totalAmount = calculateTotal(newItems))
         }
     }
 
     fun clearCart() {
-        _uiState.update { it.copy(cartItems = emptyList(), totalAmount = 0.0, checkoutMessage = null, lastSaleItems = null, lastSaleTotal = null) }
+        _cartState.update { it.copy(cartItems = emptyList(), totalAmount = 0.0, checkoutMessage = null, lastSaleItems = null, lastSaleTotal = null) }
     }
 
     fun dismissCheckoutMessage() {
-        _uiState.update { it.copy(checkoutMessage = null, lastSaleItems = null, lastSaleTotal = null) }
+        _cartState.update { it.copy(checkoutMessage = null, lastSaleItems = null, lastSaleTotal = null) }
     }
 
     private fun calculateTotal(items: List<CartItem>): Double {
         return items.sumOf { it.product.selling_price * it.quantity }
     }
-    fun checkout(paymentMethod: String, customerId: String? = null, createDelivery: Boolean = false) {
-        val currentState = _uiState.value
+    fun checkout(paymentMethod: String, customerId: String? = null, createDelivery: Boolean = false, deliveryDriverId: String? = null) {
+        val currentState = _cartState.value
         if (currentState.cartItems.isEmpty()) return
         
-        _uiState.update { it.copy(isLoading = true, checkoutMessage = null) }
+        _cartState.update { it.copy(isLoading = true, checkoutMessage = null) }
 
         viewModelScope.launch {
             val itemsReq = currentState.cartItems.map {
@@ -126,12 +145,13 @@ class PosViewModel(
                 credit_amount = 0.0,
                 payment_method = paymentMethod,
                 items = itemsReq,
-                create_delivery = createDelivery
+                create_delivery = createDelivery,
+                delivery_employee_id = deliveryDriverId
             )
 
             val result = salesRepository.processSale(saleReq)
             
-            _uiState.update { state ->
+            _cartState.update { state ->
                 if (result.isSuccess) {
                     state.copy(
                         isLoading = false,
@@ -153,12 +173,13 @@ class PosViewModel(
 }
 
 class PosViewModelFactory(
-    private val salesRepository: SalesRepository
+    private val salesRepository: SalesRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PosViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return PosViewModel(salesRepository) as T
+            return PosViewModel(salesRepository, profileRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

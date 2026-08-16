@@ -97,6 +97,25 @@ class ProductsViewModel(
             }
         }
     }
+
+    fun updateProduct(product: Product) {
+        viewModelScope.launch {
+            try {
+                repository.updateProduct(product)
+                loadProducts()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Failed to update product")
+            }
+        }
+    }
+
+    suspend fun getLotCount(productId: String): Int {
+        return try {
+            repository.getStockBatchesForProduct(productId).size
+        } catch (e: Exception) {
+            0
+        }
+    }
 }
 
 class ProductsViewModelFactory(

@@ -25,9 +25,11 @@ import com.devsoft.freshfood.data.local.entity.*
         InventoryItemEntity::class,
         ReturnEntity::class,
         DeliveryOrderEntity::class,
-        DeliveryItemEntity::class
+        DeliveryItemEntity::class,
+        ProfileEntity::class,
+        NotificationEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class FreshFoodDatabase : RoomDatabase() {
@@ -44,6 +46,8 @@ abstract class FreshFoodDatabase : RoomDatabase() {
     abstract fun inventoryDao(): InventoryDao
     abstract fun returnDao(): ReturnDao
     abstract fun deliveryDao(): DeliveryDao
+    abstract fun profileDao(): ProfileDao
+    abstract fun notificationDao(): NotificationDao
 
     companion object {
         @Volatile

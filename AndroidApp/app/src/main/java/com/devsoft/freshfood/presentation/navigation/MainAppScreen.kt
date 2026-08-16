@@ -28,6 +28,7 @@ import com.devsoft.freshfood.presentation.purchases.PurchaseViewModel
 import com.devsoft.freshfood.presentation.deliveries.DeliveryViewModel
 import com.devsoft.freshfood.presentation.deliveries.DeliveryDashboardScreen
 import com.devsoft.freshfood.presentation.deliveries.DeliveryDetailsScreen
+import com.devsoft.freshfood.presentation.users.UserManagementScreen
 import com.devsoft.freshfood.presentation.inventory.InventoryViewModel
 import com.devsoft.freshfood.presentation.inventory.ReturnsViewModel
 import com.devsoft.freshfood.presentation.inventory.PhysicalInventoryScreen
@@ -37,6 +38,8 @@ import androidx.navigation.navArgument
 
 @Composable
 fun MainAppScreen(
+    userId: String?,
+    userRole: String,
     dashboardViewModel: DashboardViewModel,
     productsViewModel: ProductsViewModel,
     posViewModel: PosViewModel,
@@ -44,11 +47,23 @@ fun MainAppScreen(
     purchaseViewModel: PurchaseViewModel,
     deliveryViewModel: DeliveryViewModel,
     inventoryViewModel: InventoryViewModel,
-    returnsViewModel: ReturnsViewModel
+    returnsViewModel: ReturnsViewModel,
+    profileRepository: com.devsoft.freshfood.domain.repository.ProfileRepository,
+    onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(currentRoute) {
+        val syncWorkRequest = androidx.work.OneTimeWorkRequestBuilder<com.devsoft.freshfood.data.sync.SyncWorker>().build()
+        androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
+            "auto_sync_${currentRoute}", 
+            androidx.work.ExistingWorkPolicy.REPLACE, 
+            syncWorkRequest
+        )
+    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -68,58 +83,32 @@ fun MainAppScreen(
                 Divider(modifier = Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(16.dp))
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                    label = { Text("Dashboard") },
-                    selected = currentRoute == "dashboard",
-                    onClick = {
-                        navController.navigate("dashboard") { launchSingleTop = true; restoreState = true }
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
+                val isDelivery = userRole == "DELIVERY"
+                if (!isDelivery) {
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.Home, contentDescription = null) },
+                        label = { Text("Dashboard") },
+                        selected = currentRoute == "dashboard",
+                        onClick = {
+                            navController.navigate("dashboard") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) },
+                        label = { Text("Point of Sale") },
+                        selected = currentRoute == "pos",
+                        onClick = {
+                            navController.navigate("pos") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) },
-                    label = { Text("Point of Sale (POS)") },
-                    selected = currentRoute == "pos",
-                    onClick = {
-                        navController.navigate("pos") { launchSingleTop = true; restoreState = true }
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Filled.List, contentDescription = null) },
-                    label = { Text("Products & Stock") },
-                    selected = currentRoute == "products",
-                    onClick = {
-                        navController.navigate("products") { launchSingleTop = true; restoreState = true }
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    label = { Text("Purchases & Restock") },
-                    selected = currentRoute == "purchases",
-                    onClick = {
-                        navController.navigate("purchases") { launchSingleTop = true; restoreState = true }
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                    label = { Text("Customers & Credit") },
-                    selected = currentRoute == "customers",
-                    onClick = {
-                        navController.navigate("customers") { launchSingleTop = true; restoreState = true }
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Filled.Send, contentDescription = null) },
                     label = { Text("Deliveries") },
                     selected = currentRoute == "deliveries",
                     onClick = {
@@ -128,31 +117,88 @@ fun MainAppScreen(
                     },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
+
+                if (!isDelivery) {
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.List, contentDescription = null) },
+                        label = { Text("Products") },
+                        selected = currentRoute == "products",
+                        onClick = {
+                            navController.navigate("products") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                        label = { Text("Customers") },
+                        selected = currentRoute == "customers",
+                        onClick = {
+                            navController.navigate("customers") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                        label = { Text("Purchase Entry") },
+                        selected = currentRoute == "purchases",
+                        onClick = {
+                            navController.navigate("purchases") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.List, contentDescription = null) },
+                        label = { Text("Physical Inventory") },
+                        selected = currentRoute == "inventory",
+                        onClick = {
+                            navController.navigate("inventory") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
+                        label = { Text("Customer Returns") },
+                        selected = currentRoute == "returns",
+                        onClick = {
+                            navController.navigate("returns") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                        label = { Text("Users / Drivers") },
+                        selected = currentRoute == "users",
+                        onClick = {
+                            navController.navigate("users") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.weight(1f))
+                Divider(modifier = Modifier.padding(horizontal = 16.dp))
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Filled.List, contentDescription = null) },
-                    label = { Text("Physical Inventory") },
-                    selected = currentRoute == "inventory",
+                    icon = { Icon(Icons.Filled.ExitToApp, contentDescription = "Log out", tint = MaterialTheme.colorScheme.error) },
+                    label = { Text("Log out", color = MaterialTheme.colorScheme.error) },
+                    selected = false,
                     onClick = {
-                        navController.navigate("inventory") { launchSingleTop = true; restoreState = true }
                         scope.launch { drawerState.close() }
+                        onLogout()
                     },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp)
                 )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
-                    label = { Text("Customer Returns") },
-                    selected = currentRoute == "returns",
-                    onClick = {
-                        navController.navigate("returns") { launchSingleTop = true; restoreState = true }
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
-                // We will add Reports, Settings here later.
             }
         }
     ) {
-        NavHost(navController = navController, startDestination = "dashboard", modifier = Modifier.fillMaxSize()) {
+        val db = com.devsoft.freshfood.data.local.FreshFoodDatabase.getDatabase(context)
+        val startDest = if (userRole == "DELIVERY") "deliveries" else "dashboard"
+        NavHost(navController = navController, startDestination = startDest, modifier = Modifier.fillMaxSize()) {
             composable("dashboard") { 
                 DashboardScreen(dashboardViewModel, onOpenDrawer = { scope.launch { drawerState.open() } }) 
             }
@@ -218,6 +264,8 @@ fun MainAppScreen(
             composable("deliveries") {
                 DeliveryDashboardScreen(
                     viewModel = deliveryViewModel,
+                    currentUserId = userId,
+                    currentUserRole = userRole,
                     onDeliveryClick = { id -> navController.navigate("delivery_details/$id") },
                     onOpenDrawer = { scope.launch { drawerState.open() } }
                 )
@@ -247,6 +295,15 @@ fun MainAppScreen(
                     viewModel = returnsViewModel,
                     onOpenDrawer = { scope.launch { drawerState.open() } }
                 )
+            }
+            
+            composable("users") { 
+                UserManagementScreen(
+                    onOpenDrawer = { scope.launch { drawerState.open() } },
+                    profileRepository = profileRepository,
+                    profileDao = db.profileDao(),
+                    syncQueueDao = db.syncQueueDao()
+                ) 
             }
         }
     }

@@ -51,6 +51,17 @@ class DeliveryViewModel(
             }
         }
     }
+
+    fun deleteDeliveryOrder(id: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteDeliveryOrder(id)
+                loadDeliveries() // Reload to reflect changes
+            } catch (e: Exception) {
+                // Ideally handle error
+            }
+        }
+    }
 }
 
 class DeliveryViewModelFactory(

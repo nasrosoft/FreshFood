@@ -61,6 +61,8 @@ fun PosScreen(
     var quantityDialogItem by remember { mutableStateOf<com.devsoft.freshfood.presentation.sales.CartItem?>(null) }
     var customQuantityText by remember { mutableStateOf("") }
     var createDelivery by remember { mutableStateOf(false) }
+    var showDriverDialog by remember { mutableStateOf(false) }
+    var selectedDriver by remember { mutableStateOf<com.devsoft.freshfood.data.local.entity.ProfileEntity?>(null) }
 
     if (quantityDialogItem != null) {
         AlertDialog(
@@ -206,6 +208,34 @@ fun PosScreen(
         )
     }
 
+    if (showDriverDialog) {
+        AlertDialog(
+            onDismissRequest = { showDriverDialog = false },
+            title = { Text("Select Delivery Driver") },
+            text = {
+                LazyColumn {
+                    items(uiState.deliveryDrivers.size) { index ->
+                        val driver = uiState.deliveryDrivers[index]
+                        TextButton(
+                            onClick = {
+                                selectedDriver = driver
+                                showDriverDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("${driver.first_name} ${driver.last_name}")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDriverDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -249,6 +279,29 @@ fun PosScreen(
                         color = PosGreen, 
                         fontWeight = FontWeight.SemiBold
                     )
+                }
+            }
+
+            if (createDelivery) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFF3E0))
+                        .clickable { showDriverDialog = true }
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.ShoppingCart, contentDescription = null, tint = Color(0xFFE65100))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = selectedDriver?.let { "${it.first_name} ${it.last_name}" } ?: "Select Delivery Driver", 
+                            color = Color(0xFFE65100), 
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
 
@@ -360,27 +413,7 @@ fun PosScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Pagination Placeholder
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(PosLightGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = null, tint = Color.Gray)
-                    }
-                    Text(" 1 / 1 ", modifier = Modifier.padding(horizontal = 8.dp), fontWeight = FontWeight.Bold)
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(PosLightGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
-                    }
-                }
+                // Pagination Placeholder removed
 
                 // Action Buttons
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -411,8 +444,8 @@ fun PosScreen(
                     }
 
                     Button(
-                        onClick = { viewModel.checkout("CASH", selectedCustomer?.id, createDelivery) },
-                        enabled = uiState.cartItems.isNotEmpty(),
+                        onClick = { viewModel.checkout("CASH", selectedCustomer?.id, createDelivery, selectedDriver?.id) },
+                        enabled = uiState.cartItems.isNotEmpty() && (!createDelivery || selectedDriver != null),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PosGreen,
                             contentColor = Color.White
@@ -464,9 +497,9 @@ fun ProductPosCard(product: Product, onClick: () -> Unit) {
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "SKU: ${product.id.take(6)}",
+                text = "Stock: ${product.current_stock}",
                 fontSize = 10.sp,
-                color = Color.Gray,
+                color = if (product.current_stock <= 0) PosRed else Color.Gray,
                 maxLines = 1,
                 textAlign = TextAlign.Center
             )

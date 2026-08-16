@@ -19,10 +19,14 @@ import com.devsoft.freshfood.data.local.dao.DeliveryDao;
 import com.devsoft.freshfood.data.local.dao.DeliveryDao_Impl;
 import com.devsoft.freshfood.data.local.dao.InventoryDao;
 import com.devsoft.freshfood.data.local.dao.InventoryDao_Impl;
+import com.devsoft.freshfood.data.local.dao.NotificationDao;
+import com.devsoft.freshfood.data.local.dao.NotificationDao_Impl;
 import com.devsoft.freshfood.data.local.dao.PaymentDao;
 import com.devsoft.freshfood.data.local.dao.PaymentDao_Impl;
 import com.devsoft.freshfood.data.local.dao.ProductDao;
 import com.devsoft.freshfood.data.local.dao.ProductDao_Impl;
+import com.devsoft.freshfood.data.local.dao.ProfileDao;
+import com.devsoft.freshfood.data.local.dao.ProfileDao_Impl;
 import com.devsoft.freshfood.data.local.dao.PurchaseDao;
 import com.devsoft.freshfood.data.local.dao.PurchaseDao_Impl;
 import com.devsoft.freshfood.data.local.dao.ReturnDao;
@@ -74,10 +78,14 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
 
   private volatile DeliveryDao _deliveryDao;
 
+  private volatile ProfileDao _profileDao;
+
+  private volatile NotificationDao _notificationDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(1) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `products` (`id` TEXT NOT NULL, `barcode` TEXT, `name` TEXT NOT NULL, `category_id` TEXT, `brand_id` TEXT, `description` TEXT, `image_url` TEXT, `unit` TEXT NOT NULL, `purchase_price` REAL NOT NULL, `selling_price` REAL NOT NULL, `min_selling_price` REAL NOT NULL, `current_stock` INTEGER NOT NULL, `min_stock` INTEGER NOT NULL, `max_stock` INTEGER, `is_active` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `deleted_at` TEXT, PRIMARY KEY(`id`))");
@@ -97,8 +105,10 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
         db.execSQL("CREATE TABLE IF NOT EXISTS `returns` (`id` TEXT NOT NULL, `date` TEXT, `customer_id` TEXT, `product_id` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `reason` TEXT, `status` TEXT NOT NULL, `created_by` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `delivery_orders` (`id` TEXT NOT NULL, `customer_id` TEXT, `delivery_employee_id` TEXT, `status` TEXT NOT NULL, `notes` TEXT, `created_at` TEXT, `updated_at` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `delivery_items` (`id` TEXT NOT NULL, `delivery_order_id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `created_at` TEXT, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `profiles` (`id` TEXT NOT NULL, `first_name` TEXT NOT NULL, `last_name` TEXT NOT NULL, `phone` TEXT, `role` TEXT NOT NULL, `is_active` INTEGER NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `notifications` (`id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `title` TEXT NOT NULL, `message` TEXT NOT NULL, `is_read` INTEGER NOT NULL, `created_at` TEXT NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bd741213e3b3d5af19893d9b88df9d64')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3595b77c5c2a2cd965f6220a97f0c79a')");
       }
 
       @Override
@@ -120,6 +130,8 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
         db.execSQL("DROP TABLE IF EXISTS `returns`");
         db.execSQL("DROP TABLE IF EXISTS `delivery_orders`");
         db.execSQL("DROP TABLE IF EXISTS `delivery_items`");
+        db.execSQL("DROP TABLE IF EXISTS `profiles`");
+        db.execSQL("DROP TABLE IF EXISTS `notifications`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -476,9 +488,43 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
                   + " Expected:\n" + _infoDeliveryItems + "\n"
                   + " Found:\n" + _existingDeliveryItems);
         }
+        final HashMap<String, TableInfo.Column> _columnsProfiles = new HashMap<String, TableInfo.Column>(8);
+        _columnsProfiles.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProfiles.put("first_name", new TableInfo.Column("first_name", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProfiles.put("last_name", new TableInfo.Column("last_name", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProfiles.put("phone", new TableInfo.Column("phone", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProfiles.put("role", new TableInfo.Column("role", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProfiles.put("is_active", new TableInfo.Column("is_active", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProfiles.put("created_at", new TableInfo.Column("created_at", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsProfiles.put("updated_at", new TableInfo.Column("updated_at", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysProfiles = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesProfiles = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoProfiles = new TableInfo("profiles", _columnsProfiles, _foreignKeysProfiles, _indicesProfiles);
+        final TableInfo _existingProfiles = TableInfo.read(db, "profiles");
+        if (!_infoProfiles.equals(_existingProfiles)) {
+          return new RoomOpenHelper.ValidationResult(false, "profiles(com.devsoft.freshfood.data.local.entity.ProfileEntity).\n"
+                  + " Expected:\n" + _infoProfiles + "\n"
+                  + " Found:\n" + _existingProfiles);
+        }
+        final HashMap<String, TableInfo.Column> _columnsNotifications = new HashMap<String, TableInfo.Column>(6);
+        _columnsNotifications.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsNotifications.put("user_id", new TableInfo.Column("user_id", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsNotifications.put("title", new TableInfo.Column("title", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsNotifications.put("message", new TableInfo.Column("message", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsNotifications.put("is_read", new TableInfo.Column("is_read", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsNotifications.put("created_at", new TableInfo.Column("created_at", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysNotifications = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesNotifications = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoNotifications = new TableInfo("notifications", _columnsNotifications, _foreignKeysNotifications, _indicesNotifications);
+        final TableInfo _existingNotifications = TableInfo.read(db, "notifications");
+        if (!_infoNotifications.equals(_existingNotifications)) {
+          return new RoomOpenHelper.ValidationResult(false, "notifications(com.devsoft.freshfood.data.local.entity.NotificationEntity).\n"
+                  + " Expected:\n" + _infoNotifications + "\n"
+                  + " Found:\n" + _existingNotifications);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "bd741213e3b3d5af19893d9b88df9d64", "22ee935b15e352f954b8092e285d50b9");
+    }, "3595b77c5c2a2cd965f6220a97f0c79a", "cb50a2dd00ac0a4bb3fece8761db53c0");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -489,7 +535,7 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "products","customers","sync_queue","sync_metadata","payments","credit_transactions","sales","sale_items","stock_batches","stock_movements","purchases","purchase_items","inventory_sessions","inventory_items","returns","delivery_orders","delivery_items");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "products","customers","sync_queue","sync_metadata","payments","credit_transactions","sales","sale_items","stock_batches","stock_movements","purchases","purchase_items","inventory_sessions","inventory_items","returns","delivery_orders","delivery_items","profiles","notifications");
   }
 
   @Override
@@ -515,6 +561,8 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
       _db.execSQL("DELETE FROM `returns`");
       _db.execSQL("DELETE FROM `delivery_orders`");
       _db.execSQL("DELETE FROM `delivery_items`");
+      _db.execSQL("DELETE FROM `profiles`");
+      _db.execSQL("DELETE FROM `notifications`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -541,6 +589,8 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
     _typeConvertersMap.put(InventoryDao.class, InventoryDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(ReturnDao.class, ReturnDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(DeliveryDao.class, DeliveryDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(ProfileDao.class, ProfileDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(NotificationDao.class, NotificationDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -723,6 +773,34 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
           _deliveryDao = new DeliveryDao_Impl(this);
         }
         return _deliveryDao;
+      }
+    }
+  }
+
+  @Override
+  public ProfileDao profileDao() {
+    if (_profileDao != null) {
+      return _profileDao;
+    } else {
+      synchronized(this) {
+        if(_profileDao == null) {
+          _profileDao = new ProfileDao_Impl(this);
+        }
+        return _profileDao;
+      }
+    }
+  }
+
+  @Override
+  public NotificationDao notificationDao() {
+    if (_notificationDao != null) {
+      return _notificationDao;
+    } else {
+      synchronized(this) {
+        if(_notificationDao == null) {
+          _notificationDao = new NotificationDao_Impl(this);
+        }
+        return _notificationDao;
       }
     }
   }

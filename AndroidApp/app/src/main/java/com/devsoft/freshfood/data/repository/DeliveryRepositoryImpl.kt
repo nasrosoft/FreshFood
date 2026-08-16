@@ -51,6 +51,27 @@ class DeliveryRepositoryImpl(
         }
     }
 
+    override suspend fun deleteDeliveryOrder(id: String) {
+        val deviceId = DeviceUtil.getDeviceId(context)
+        
+        database.withTransaction {
+            val order = database.deliveryDao().getDeliveryOrderById(id)
+            if (order != null) {
+                database.deliveryDao().deleteDeliveryOrderById(id)
+                
+                database.syncQueueDao().insert(
+                    SyncQueueEntity(
+                        entity_type = "delivery_orders",
+                        entity_id = id,
+                        operation = "DELETE",
+                        payload = Json.encodeToString(order),
+                        device_id = deviceId
+                    )
+                )
+            }
+        }
+    }
+
     private suspend fun enrichDeliveryOrder(order: DeliveryOrder): DeliveryOrderWithDetails {
         // 1. Fetch Customer
         val customer = order.customer_id?.let { custId ->

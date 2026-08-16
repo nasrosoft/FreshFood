@@ -13,6 +13,7 @@ data class SaleRequest(
     val payment_method: String,
     val items: List<SaleItemRequest>,
     val create_delivery: Boolean = false,
+    val delivery_employee_id: String? = null,
     val payment_id: String? = null,
     val credit_transaction_id: String? = null,
     val created_at: String? = null
