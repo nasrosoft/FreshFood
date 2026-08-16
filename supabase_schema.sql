@@ -237,7 +237,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER trigger_update_customer_credit
 AFTER INSERT ON credit_transactions
@@ -265,7 +265,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER trigger_process_delivery_stock
 AFTER UPDATE ON delivery_orders
@@ -332,7 +332,7 @@ BEGIN
     
     RETURN COALESCE(NEW, OLD);
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER trigger_delivery_item_modified
 AFTER UPDATE OR DELETE ON delivery_items
@@ -459,7 +459,7 @@ EXCEPTION WHEN OTHERS THEN
     -- In PostgreSQL, raising an exception rolls back the transaction.
     RAISE EXCEPTION 'Transaction failed: %', SQLERRM;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ==========================================
 -- 3. ROW LEVEL SECURITY (RLS)
