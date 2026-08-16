@@ -22,6 +22,8 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
 import com.devsoft.freshfood.data.repository.*
 import com.devsoft.freshfood.ui.theme.FreshFoodTheme
+import io.github.jan.supabase.serializer.KotlinXSerializer
+import kotlinx.serialization.json.Json
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +36,10 @@ class MainActivity : ComponentActivity() {
             install(Postgrest)
             install(Auth)
             install(Storage)
+            defaultSerializer = KotlinXSerializer(Json { 
+                ignoreUnknownKeys = true 
+                coerceInputValues = true
+            })
         }
 
         val authRepo = AuthRepositoryImpl(supabaseClient)
