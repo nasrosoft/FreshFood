@@ -229,6 +229,25 @@ public final class DeliveryDao_Impl implements DeliveryDao {
   }
 
   @Override
+  public Object insertDeliveryOrders(final List<DeliveryOrderEntity> orders,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __insertionAdapterOfDeliveryOrderEntity.insert(orders);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Object insertDeliveryItems(final List<DeliveryItemEntity> items,
       final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {

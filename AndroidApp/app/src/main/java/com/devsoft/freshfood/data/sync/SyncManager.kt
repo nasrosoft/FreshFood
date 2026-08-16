@@ -5,6 +5,7 @@ import android.util.Log
 import com.devsoft.freshfood.data.local.FreshFoodDatabase
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -81,6 +82,11 @@ class SyncManager(
                         supabase.postgrest[op.entity_type].update(payload) {
                             filter { eq("id", op.entity_id) }
                         }
+                    }
+                    "RPC" -> {
+                        val payload = json.decodeFromString<JsonObject>(op.payload!!)
+                        val rpcName = op.entity_type.removePrefix("rpc_")
+                        supabase.postgrest.rpc(rpcName, payload)
                     }
                 }
                 
