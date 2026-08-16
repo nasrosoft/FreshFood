@@ -1,20 +1,20 @@
-#Sun Aug 16 01:16:02 GMT+01:00 2026
-base.0=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
-base.1=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
-base.10=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\6\\classes.dex
-base.11=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\7\\classes.dex
-base.12=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\8\\classes.dex
-base.13=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\9\\classes.dex
-base.14=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
-base.15=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes3.dex
-base.2=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\11\\classes.dex
-base.3=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\13\\classes.dex
-base.4=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\14\\classes.dex
-base.5=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\15\\classes.dex
-base.6=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\2\\classes.dex
-base.7=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\3\\classes.dex
-base.8=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\4\\classes.dex
-base.9=D\:\\NegadiBjl\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\5\\classes.dex
+#Sun Aug 16 14:14:35 GMT+01:00 2026
+base.0=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
+base.1=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
+base.10=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\6\\classes.dex
+base.11=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\7\\classes.dex
+base.12=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\8\\classes.dex
+base.13=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\9\\classes.dex
+base.14=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
+base.15=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes3.dex
+base.2=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\11\\classes.dex
+base.3=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\13\\classes.dex
+base.4=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\14\\classes.dex
+base.5=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\15\\classes.dex
+base.6=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\2\\classes.dex
+base.7=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\3\\classes.dex
+base.8=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\4\\classes.dex
+base.9=D\:\\github\\FreshFood\\AndroidApp\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\5\\classes.dex
 path.0=classes.dex
 path.1=0/classes.dex
 path.10=6/classes.dex

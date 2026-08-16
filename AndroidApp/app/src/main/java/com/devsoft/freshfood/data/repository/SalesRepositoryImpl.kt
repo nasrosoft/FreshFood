@@ -18,6 +18,9 @@ import com.devsoft.freshfood.utils.DeviceUtil
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.devsoft.freshfood.data.sync.SyncWorker
 
 class SalesRepositoryImpl(
     private val database: FreshFoodDatabase,
@@ -61,18 +64,20 @@ class SalesRepositoryImpl(
                     )
                 )
                 
-                stockMovements.add(
-                    StockMovementEntity(
-                        id = UUID.randomUUID().toString(),
-                        product_id = item.product_id,
-                        batch_id = null, // Backend process_sale RPC handles specific batch deduction
-                        movement_type = "SALE",
-                        quantity = -item.quantity, // Negative for OUT
-                        reference_id = saleId,
-                        user_id = saleRequest.user_id ?: "",
-                        created_at = createdAt
+                if (!saleRequest.create_delivery) {
+                    stockMovements.add(
+                        StockMovementEntity(
+                            id = UUID.randomUUID().toString(),
+                            product_id = item.product_id,
+                            batch_id = null, // Backend process_sale RPC handles specific batch deduction
+                            movement_type = "SALE",
+                            quantity = -item.quantity, // Negative for OUT
+                            reference_id = saleId,
+                            user_id = saleRequest.user_id ?: "",
+                            created_at = createdAt
+                        )
                     )
-                )
+                }
             }
             
             // 3. Optional Payment & Credit Entities
@@ -145,7 +150,18 @@ class SalesRepositoryImpl(
             database.withTransaction {
                 database.saleDao().insertSale(saleEntity)
                 database.saleItemDao().insertSaleItems(saleItems)
-                database.stockDao().insertStockMovements(stockMovements)
+                
+                if (!saleRequest.create_delivery) {
+                    database.stockDao().insertStockMovements(stockMovements)
+                    // Deduct from product local stock
+                    saleRequest.items.forEach { item ->
+                        val product = database.productDao().getProductById(item.product_id)
+                        if (product != null) {
+                            val newStock = product.current_stock - item.quantity
+                            database.productDao().updateProduct(product.copy(current_stock = newStock))
+                        }
+                    }
+                }
                 
                 paymentEntity?.let { database.paymentDao().insertPayment(it) }
                 creditTxEntity?.let { database.creditTransactionDao().insertCreditTransaction(it) }
@@ -211,6 +227,8 @@ class SalesRepositoryImpl(
                 
                 // Update local customer credit locally if needed (omitted for brevity, assume UI calculates from transactions)
             }
+            
+            WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
             
             Result.success("INV-${saleId.take(8).uppercase()}")
         } catch (e: Exception) {

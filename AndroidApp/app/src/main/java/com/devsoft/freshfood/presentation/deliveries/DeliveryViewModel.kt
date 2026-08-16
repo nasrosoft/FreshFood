@@ -25,7 +25,7 @@ class DeliveryViewModel(
     val uiState: StateFlow<DeliveryUiState> = _uiState.asStateFlow()
 
     init {
-        loadDeliveries()
+        // loadDeliveries is called from LaunchedEffect in the UI
     }
 
     fun loadDeliveries() {
@@ -45,9 +45,8 @@ class DeliveryViewModel(
         viewModelScope.launch {
             try {
                 repository.updateDeliveryStatus(id, newStatus)
-                loadDeliveries() // Reload to reflect changes
             } catch (e: Exception) {
-                // Ideally handle error via a side-effect channel
+                e.printStackTrace()
             }
         }
     }
@@ -56,9 +55,8 @@ class DeliveryViewModel(
         viewModelScope.launch {
             try {
                 repository.deleteDeliveryOrder(id)
-                loadDeliveries() // Reload to reflect changes
             } catch (e: Exception) {
-                // Ideally handle error
+                e.printStackTrace()
             }
         }
     }

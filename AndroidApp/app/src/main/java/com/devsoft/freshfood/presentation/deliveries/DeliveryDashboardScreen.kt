@@ -27,6 +27,7 @@ fun DeliveryDashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableStateOf(0) }
+    var orderToDelete by remember { mutableStateOf<String?>(null) }
     val tabs = listOf("Pending", "Out for Delivery", "Delivered")
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -104,7 +105,7 @@ IconButton(onClick = onOpenDrawer) {
                                     details = details,
                                     onClick = { onDeliveryClick(details.order.id) },
                                     canDelete = currentUserRole == "ADMIN" && details.order.status in listOf("PENDING", "ASSIGNED", "OUT_FOR_DELIVERY"),
-                                    onDeleteClick = { viewModel.deleteDeliveryOrder(details.order.id) }
+                                    onDeleteClick = { orderToDelete = details.order.id }
                                 )
                             }
                         }
@@ -112,6 +113,29 @@ IconButton(onClick = onOpenDrawer) {
                 }
             }
         }
+    }
+
+    if (orderToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { orderToDelete = null },
+            title = { Text("Delete Delivery") },
+            text = { Text("Are you sure you want to delete this delivery? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        orderToDelete?.let { viewModel.deleteDeliveryOrder(it) }
+                        orderToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { orderToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -141,7 +165,7 @@ fun DeliveryOrderCard(
                     fontWeight = FontWeight.Bold
                 )
                 if (canDelete) {
-                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(24.dp)) {
+                    IconButton(onClick = onDeleteClick) {
                         Icon(Icons.Filled.Delete, contentDescription = "Delete Order", tint = MaterialTheme.colorScheme.error)
                     }
                 }

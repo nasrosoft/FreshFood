@@ -11,6 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.UUID
+import java.time.Instant
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.devsoft.freshfood.data.local.entity.StockMovementEntity
+import com.devsoft.freshfood.data.sync.SyncWorker
 
 class DeliveryRepositoryImpl(
     private val database: FreshFoodDatabase,
@@ -47,8 +53,61 @@ class DeliveryRepositoryImpl(
                         device_id = deviceId
                     )
                 )
+                // Stock reduction logic
+                if (newStatus == "DELIVERED" && order.status != "DELIVERED") {
+                    val items = database.deliveryDao().getItemsForDeliveryOrder(id)
+                    val stockMovements = mutableListOf<StockMovementEntity>()
+                    val now = Instant.now().toString()
+                    
+                    items.forEach { item ->
+                        stockMovements.add(
+                            StockMovementEntity(
+                                id = UUID.randomUUID().toString(),
+                                product_id = item.product_id,
+                                batch_id = null,
+                                movement_type = "DELIVERY",
+                                quantity = -item.quantity,
+                                reference_id = id,
+                                user_id = order.delivery_employee_id ?: "",
+                                created_at = now
+                            )
+                        )
+                        val product = database.productDao().getProductById(item.product_id)
+                        if (product != null) {
+                            database.productDao().updateProduct(product.copy(current_stock = product.current_stock - item.quantity))
+                        }
+                    }
+                    database.stockDao().insertStockMovements(stockMovements)
+                } else if (order.status == "DELIVERED" && newStatus != "DELIVERED") {
+                    // Restock if status changed from DELIVERED to something else (e.g. RETURNED)
+                    val items = database.deliveryDao().getItemsForDeliveryOrder(id)
+                    val stockMovements = mutableListOf<StockMovementEntity>()
+                    val now = Instant.now().toString()
+                    
+                    items.forEach { item ->
+                        stockMovements.add(
+                            StockMovementEntity(
+                                id = UUID.randomUUID().toString(),
+                                product_id = item.product_id,
+                                batch_id = null,
+                                movement_type = "DELIVERY_RETURN",
+                                quantity = item.quantity,
+                                reference_id = id,
+                                user_id = order.delivery_employee_id ?: "",
+                                created_at = now
+                            )
+                        )
+                        val product = database.productDao().getProductById(item.product_id)
+                        if (product != null) {
+                            database.productDao().updateProduct(product.copy(current_stock = product.current_stock + item.quantity))
+                        }
+                    }
+                    database.stockDao().insertStockMovements(stockMovements)
+                }
             }
         }
+        
+        WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
     }
 
     override suspend fun deleteDeliveryOrder(id: String) {
@@ -57,6 +116,7 @@ class DeliveryRepositoryImpl(
         database.withTransaction {
             val order = database.deliveryDao().getDeliveryOrderById(id)
             if (order != null) {
+                database.deliveryDao().deleteItemsForDeliveryOrder(id)
                 database.deliveryDao().deleteDeliveryOrderById(id)
                 
                 database.syncQueueDao().insert(
@@ -64,12 +124,14 @@ class DeliveryRepositoryImpl(
                         entity_type = "delivery_orders",
                         entity_id = id,
                         operation = "DELETE",
-                        payload = Json.encodeToString(order),
+                        payload = Json.encodeToString(order.toDomainModel()),
                         device_id = deviceId
                     )
                 )
             }
         }
+        
+        WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())
     }
 
     private suspend fun enrichDeliveryOrder(order: DeliveryOrder): DeliveryOrderWithDetails {

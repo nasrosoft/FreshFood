@@ -29,6 +29,9 @@ interface DeliveryDao {
     @Query("SELECT * FROM delivery_items WHERE delivery_order_id = :orderId")
     suspend fun getItemsForDeliveryOrder(orderId: String): List<DeliveryItemEntity>
 
+    @Query("DELETE FROM delivery_items WHERE delivery_order_id = :orderId")
+    suspend fun deleteItemsForDeliveryOrder(orderId: String)
+
     @Query("DELETE FROM delivery_orders WHERE id = :id")
     suspend fun deleteDeliveryOrderById(id: String)
 }

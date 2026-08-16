@@ -41,6 +41,8 @@ public final class DeliveryDao_Impl implements DeliveryDao {
 
   private final EntityDeletionOrUpdateAdapter<DeliveryOrderEntity> __updateAdapterOfDeliveryOrderEntity;
 
+  private final SharedSQLiteStatement __preparedStmtOfDeleteItemsForDeliveryOrder;
+
   private final SharedSQLiteStatement __preparedStmtOfDeleteDeliveryOrderById;
 
   public DeliveryDao_Impl(@NonNull final RoomDatabase __db) {
@@ -145,6 +147,14 @@ public final class DeliveryDao_Impl implements DeliveryDao {
         statement.bindString(8, entity.getId());
       }
     };
+    this.__preparedStmtOfDeleteItemsForDeliveryOrder = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM delivery_items WHERE delivery_order_id = ?";
+        return _query;
+      }
+    };
     this.__preparedStmtOfDeleteDeliveryOrderById = new SharedSQLiteStatement(__db) {
       @Override
       @NonNull
@@ -207,6 +217,32 @@ public final class DeliveryDao_Impl implements DeliveryDao {
           return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteItemsForDeliveryOrder(final String orderId,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteItemsForDeliveryOrder.acquire();
+        int _argIndex = 1;
+        _stmt.bindString(_argIndex, orderId);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteItemsForDeliveryOrder.release(_stmt);
         }
       }
     }, $completion);

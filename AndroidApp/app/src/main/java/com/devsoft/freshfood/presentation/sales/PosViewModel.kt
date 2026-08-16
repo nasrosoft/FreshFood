@@ -57,11 +57,18 @@ class PosViewModel(
         _cartState.update { state ->
             val existingItem = state.cartItems.find { it.product.id == product.id }
             val newItems = if (existingItem != null) {
+                if (existingItem.quantity >= product.current_stock) {
+                    return@update state // Max stock reached
+                }
                 state.cartItems.map { 
                     if (it.product.id == product.id) it.copy(quantity = it.quantity + 1) else it
                 }
             } else {
-                state.cartItems + CartItem(product, 1)
+                if (product.current_stock > 0) {
+                    state.cartItems + CartItem(product, 1)
+                } else {
+                    return@update state // Out of stock
+                }
             }
             state.copy(cartItems = newItems, totalAmount = calculateTotal(newItems))
         }
@@ -89,11 +96,12 @@ class PosViewModel(
             removeItem(product)
             return
         }
+        val maxQuantity = if (quantity > product.current_stock) product.current_stock else quantity
         _cartState.update { state ->
             val existingItem = state.cartItems.find { it.product.id == product.id }
             if (existingItem != null) {
                 val newItems = state.cartItems.map {
-                    if (it.product.id == product.id) it.copy(quantity = quantity) else it
+                    if (it.product.id == product.id) it.copy(quantity = maxQuantity) else it
                 }
                 state.copy(cartItems = newItems, totalAmount = calculateTotal(newItems))
             } else {
