@@ -6,6 +6,7 @@ import com.devsoft.freshfood.data.local.FreshFoodDatabase
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
+import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -140,7 +141,8 @@ class SyncManager(
         
         // Delivery Orders
         try {
-            val remoteDeliveryOrders = supabase.postgrest["delivery_orders"].select().decodeList<com.devsoft.freshfood.domain.model.DeliveryOrder>()
+            val rawJson = supabase.postgrest["delivery_orders"].select().data
+            val remoteDeliveryOrders = json.decodeFromString<List<com.devsoft.freshfood.domain.model.DeliveryOrder>>(rawJson)
             val entities = remoteDeliveryOrders.map { com.devsoft.freshfood.data.local.entity.DeliveryOrderEntity.fromDomainModel(it) }
             val entitiesToInsert = entities.filter { !pendingEntityIds.contains(it.id) }
             if (entitiesToInsert.isNotEmpty()) {
@@ -152,7 +154,8 @@ class SyncManager(
         
         // Delivery Items
         try {
-            val remoteDeliveryItems = supabase.postgrest["delivery_items"].select().decodeList<com.devsoft.freshfood.domain.model.DeliveryItem>()
+            val rawJson = supabase.postgrest["delivery_items"].select().data
+            val remoteDeliveryItems = json.decodeFromString<List<com.devsoft.freshfood.domain.model.DeliveryItem>>(rawJson)
             val entities = remoteDeliveryItems.map { 
                 com.devsoft.freshfood.data.local.entity.DeliveryItemEntity(
                     id = it.id,
@@ -172,7 +175,8 @@ class SyncManager(
         
         // Profiles
         try {
-            val remoteProfiles = supabase.postgrest["profiles"].select().decodeList<com.devsoft.freshfood.data.local.entity.ProfileEntity>()
+            val rawJson = supabase.postgrest["profiles"].select().data
+            val remoteProfiles = json.decodeFromString<List<com.devsoft.freshfood.data.local.entity.ProfileEntity>>(rawJson)
             localDb.profileDao().insertProfiles(remoteProfiles)
         } catch (e: Exception) {
             Log.e("SyncManager", "Failed to pull profiles: ${e.message}")
@@ -180,31 +184,34 @@ class SyncManager(
         
         // Notifications
         try {
-            val remoteNotifs = supabase.postgrest["notifications"].select().decodeList<com.devsoft.freshfood.data.local.entity.NotificationEntity>()
-            
-            // Check if any are new by filtering those not currently in DB
-            val existingNotifsFlow = localDb.notificationDao().getAllNotifications()
-            
-            localDb.notificationDao().insertNotifications(remoteNotifs)
-            
-            // Trigger Android notifications for unread ones (assuming background sync or opened app)
-            val unreadNotifs = remoteNotifs.filter { !it.is_read }
-            if (unreadNotifs.isNotEmpty()) {
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val channel = NotificationChannel("delivery_channel", "Delivery Notifications", NotificationManager.IMPORTANCE_HIGH)
-                    notificationManager.createNotificationChannel(channel)
-                }
+            val currentUser = supabase.auth.currentUserOrNull()
+            if (currentUser != null) {
+                val rawJson = supabase.postgrest["notifications"].select {
+                    filter { eq("user_id", currentUser.id) }
+                }.data
                 
-                unreadNotifs.forEach { notif ->
-                    val builder = NotificationCompat.Builder(context, "delivery_channel")
-                        .setSmallIcon(android.R.drawable.ic_dialog_info)
-                        .setContentTitle(notif.title)
-                        .setContentText(notif.message)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setAutoCancel(true)
-                        
-                    notificationManager.notify(notif.id.hashCode(), builder.build())
+                val remoteNotifs = json.decodeFromString<List<com.devsoft.freshfood.data.local.entity.NotificationEntity>>(rawJson)
+                
+                localDb.notificationDao().insertNotifications(remoteNotifs)
+                
+                val unreadNotifs = remoteNotifs.filter { !it.is_read }
+                if (unreadNotifs.isNotEmpty()) {
+                    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val channel = NotificationChannel("delivery_channel", "Delivery Notifications", NotificationManager.IMPORTANCE_HIGH)
+                        notificationManager.createNotificationChannel(channel)
+                    }
+                    
+                    unreadNotifs.forEach { notif ->
+                        val builder = NotificationCompat.Builder(context, "delivery_channel")
+                            .setSmallIcon(android.R.drawable.ic_dialog_info)
+                            .setContentTitle(notif.title)
+                            .setContentText(notif.message)
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setAutoCancel(true)
+                            
+                        notificationManager.notify(notif.id.hashCode(), builder.build())
+                    }
                 }
             }
         } catch (e: Exception) {
