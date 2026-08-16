@@ -50,8 +50,10 @@ class DeliveryViewModel(
         viewModelScope.launch {
             try {
                 repository.updateDeliveryStatus(id, newStatus)
+                loadDeliveries() // Refresh UI after completion
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.emit("Error updating status: ${e.message}")
             }
         }
     }
