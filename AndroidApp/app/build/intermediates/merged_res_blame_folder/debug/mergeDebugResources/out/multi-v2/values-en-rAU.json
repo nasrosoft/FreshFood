@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.devsoft.freshfood.app-mergeDebugResources-63:/values-en-rAU/values-en-rAU.xml",
+            "outputFile": "com.devsoft.freshfood.app-mergeDebugResources-56:/values-en-rAU/values-en-rAU.xml",
             "map": [
                 {
                     "source": "C:\\Users\\Bsi\\.gradle\\caches\\9.0-milestone-1\\transforms\\2d8443753e3f10100e08fb623aef96d3\\transformed\\ui-release\\res\\values-en-rAU\\values-en-rAU.xml",

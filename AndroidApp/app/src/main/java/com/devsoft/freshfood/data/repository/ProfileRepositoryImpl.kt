@@ -1,13 +1,13 @@
 package com.devsoft.freshfood.data.repository
 
-import com.devsoft.freshfood.data.local.FreshFoodDatabase
-import com.devsoft.freshfood.data.local.entity.ProfileEntity
+import com.devsoft.freshfood.domain.model.Profile
 import com.devsoft.freshfood.domain.repository.ProfileRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.JsonObject
@@ -15,15 +15,19 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 class ProfileRepositoryImpl(
-    private val database: FreshFoodDatabase,
     private val supabase: SupabaseClient
 ) : ProfileRepository {
-    override fun getProfilesByRole(role: String): Flow<List<ProfileEntity>> {
-        return database.profileDao().getProfilesByRole(role)
+    override fun getProfilesByRole(role: String): Flow<List<Profile>> = flow {
+        val profiles = supabase.postgrest["profiles"]
+            .select { filter { eq("role", role) } }
+            .decodeList<Profile>()
+        emit(profiles)
     }
 
-    override suspend fun getProfileById(id: String): ProfileEntity? {
-        return database.profileDao().getProfileById(id)
+    override suspend fun getProfileById(id: String): Profile? {
+        return supabase.postgrest["profiles"]
+            .select { filter { eq("id", id) } }
+            .decodeSingleOrNull<Profile>()
     }
 
     override suspend fun createDeliveryUser(email: String, password: String, firstName: String, lastName: String): Result<String> {
@@ -40,13 +44,23 @@ class ProfileRepositoryImpl(
             }
             
             val responseStr = supabase.postgrest.rpc("create_delivery_user", payload).data
-            // responseStr is a JSON string like {"success": true, "user_id": "uuid"}
-            // So we parse it manually since we don't have a data class for it
             val responseJson = kotlinx.serialization.json.Json.parseToJsonElement(responseStr).jsonObject
             val newUserId = responseJson["user_id"]?.jsonPrimitive?.content ?: ""
             Result.success(newUserId)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun updateProfile(profile: Profile) {
+        supabase.postgrest["profiles"].update(profile) {
+            filter { eq("id", profile.id) }
+        }
+    }
+
+    override suspend fun deleteProfile(id: String) {
+        supabase.postgrest["profiles"].delete {
+            filter { eq("id", id) }
         }
     }
 }

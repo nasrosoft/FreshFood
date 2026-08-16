@@ -62,7 +62,7 @@ fun PosScreen(
     var customQuantityText by remember { mutableStateOf("") }
     var createDelivery by remember { mutableStateOf(false) }
     var showDriverDialog by remember { mutableStateOf(false) }
-    var selectedDriver by remember { mutableStateOf<com.devsoft.freshfood.data.local.entity.ProfileEntity?>(null) }
+    var selectedDriver by remember { mutableStateOf<com.devsoft.freshfood.domain.model.Profile?>(null) }
 
     if (quantityDialogItem != null) {
         AlertDialog(

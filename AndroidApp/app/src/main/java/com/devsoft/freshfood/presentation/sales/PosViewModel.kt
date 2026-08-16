@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import com.devsoft.freshfood.domain.repository.ProfileRepository
-import com.devsoft.freshfood.data.local.entity.ProfileEntity
+import com.devsoft.freshfood.domain.model.Profile
 
 data class CartItem(
     val product: Product,
@@ -32,7 +32,7 @@ data class PosUiState(
     val checkoutMessage: String? = null,
     val lastSaleItems: List<CartItem>? = null,
     val lastSaleTotal: Double? = null,
-    val deliveryDrivers: List<ProfileEntity> = emptyList()
+    val deliveryDrivers: List<Profile> = emptyList()
 )
 
 class PosViewModel(

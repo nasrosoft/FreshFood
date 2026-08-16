@@ -56,14 +56,7 @@ fun MainAppScreen(
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    LaunchedEffect(currentRoute) {
-        val syncWorkRequest = androidx.work.OneTimeWorkRequestBuilder<com.devsoft.freshfood.data.sync.SyncWorker>().build()
-        androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
-            "auto_sync_${currentRoute}", 
-            androidx.work.ExistingWorkPolicy.REPLACE, 
-            syncWorkRequest
-        )
-    }
+    // Sync scheduling removed
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -196,7 +189,6 @@ fun MainAppScreen(
             }
         }
     ) {
-        val db = com.devsoft.freshfood.data.local.FreshFoodDatabase.getDatabase(context)
         val startDest = if (userRole == "DELIVERY") "deliveries" else "dashboard"
         NavHost(navController = navController, startDestination = startDest, modifier = Modifier.fillMaxSize()) {
             composable("dashboard") { 
@@ -300,9 +292,7 @@ fun MainAppScreen(
             composable("users") { 
                 UserManagementScreen(
                     onOpenDrawer = { scope.launch { drawerState.open() } },
-                    profileRepository = profileRepository,
-                    profileDao = db.profileDao(),
-                    syncQueueDao = db.syncQueueDao()
+                    profileRepository = profileRepository
                 ) 
             }
         }

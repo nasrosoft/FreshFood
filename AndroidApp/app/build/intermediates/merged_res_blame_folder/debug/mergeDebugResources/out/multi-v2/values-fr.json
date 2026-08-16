@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.devsoft.freshfood.app-mergeDebugResources-63:/values-fr/values-fr.xml",
+            "outputFile": "com.devsoft.freshfood.app-mergeDebugResources-56:/values-fr/values-fr.xml",
             "map": [
                 {
                     "source": "C:\\Users\\Bsi\\.gradle\\caches\\9.0-milestone-1\\transforms\\5c234f15eb1253d0bc70d2f496fb9d3b\\transformed\\material3-1.1.2\\res\\values-fr\\values-fr.xml",

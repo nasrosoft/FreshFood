@@ -10,17 +10,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.Constraints
-import androidx.work.NetworkType
-import com.devsoft.freshfood.ui.theme.FreshFoodTheme
-import com.devsoft.freshfood.data.local.FreshFoodDatabase
-import com.devsoft.freshfood.data.repository.*
-import com.devsoft.freshfood.data.sync.SyncWorker
 import com.devsoft.freshfood.presentation.auth.*
 import com.devsoft.freshfood.presentation.navigation.MainAppScreen
-import java.util.concurrent.TimeUnit
 import com.devsoft.freshfood.presentation.dashboard.DashboardViewModelFactory
 import com.devsoft.freshfood.presentation.products.ProductsViewModelFactory
 import com.devsoft.freshfood.presentation.sales.PosViewModelFactory
@@ -29,6 +20,8 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
+import com.devsoft.freshfood.data.repository.*
+import com.devsoft.freshfood.ui.theme.FreshFoodTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,57 +36,15 @@ class MainActivity : ComponentActivity() {
             install(Storage)
         }
 
-        // Schedule periodic sync
-        val syncConstraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-            
-        val syncWorkRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
-            .setConstraints(syncConstraints)
-            .build()
-            
-        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
-            "freshfood_periodic_sync",
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
-            syncWorkRequest
-        )
-
-        // Initialize Database
-        val localDatabase = FreshFoodDatabase.getDatabase(applicationContext)
-
-        // Initialize Repositories
         val authRepo = AuthRepositoryImpl(supabaseClient)
-        val productRepo = ProductRepositoryImpl(
-            productDao = localDatabase.productDao(),
-            syncQueueDao = localDatabase.syncQueueDao(),
-            context = applicationContext
-        )
-        val salesRepo = SalesRepositoryImpl(
-            database = localDatabase,
-            context = applicationContext
-        )
-        val customerRepo = CustomerRepositoryImpl(
-            database = localDatabase,
-            context = applicationContext
-        )
-        val dashboardRepo = DashboardRepositoryImpl(localDatabase)
-        val purchaseRepo = PurchaseRepositoryImpl(
-            database = localDatabase,
-            context = applicationContext
-        )
-        val deliveryRepo = DeliveryRepositoryImpl(
-            database = localDatabase,
-            context = applicationContext
-        )
-        val inventoryRepo = InventoryRepositoryImpl(
-            database = localDatabase,
-            context = applicationContext
-        )
-
-        val profileRepo = com.devsoft.freshfood.data.repository.ProfileRepositoryImpl(
-            database = localDatabase,
-            supabase = supabaseClient
-        )
+        val productRepo = ProductRepositoryImpl(supabaseClient)
+        val salesRepo = SalesRepositoryImpl(supabaseClient)
+        val customerRepo = CustomerRepositoryImpl(supabaseClient)
+        val dashboardRepo = DashboardRepositoryImpl(supabaseClient)
+        val purchaseRepo = PurchaseRepositoryImpl(supabaseClient)
+        val deliveryRepo = DeliveryRepositoryImpl(supabaseClient)
+        val inventoryRepo = InventoryRepositoryImpl(supabaseClient)
+        val profileRepo = ProfileRepositoryImpl(supabaseClient)
 
         // Factories
         val authFactory = AuthViewModelFactory(authRepo, profileRepo)

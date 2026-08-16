@@ -1,69 +1,45 @@
 package com.devsoft.freshfood.data.repository
 
-import android.content.Context
-import com.devsoft.freshfood.data.local.dao.ProductDao
-import com.devsoft.freshfood.data.local.dao.SyncQueueDao
-import com.devsoft.freshfood.data.local.entity.ProductEntity
-import com.devsoft.freshfood.data.local.entity.SyncQueueEntity
 import com.devsoft.freshfood.domain.model.Product
 import com.devsoft.freshfood.domain.model.StockBatch
 import com.devsoft.freshfood.domain.repository.ProductRepository
-import com.devsoft.freshfood.utils.DeviceUtil
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.flow
 
 class ProductRepositoryImpl(
-    private val productDao: ProductDao,
-    private val syncQueueDao: SyncQueueDao,
-    private val context: Context
+    private val supabase: SupabaseClient
 ) : ProductRepository {
 
-    override suspend fun getProducts(): Flow<List<Product>> {
-        return productDao.getAllProducts().map { entities -> 
-            entities.map { it.toDomainModel() } 
-        }
+    override suspend fun getProducts(): Flow<List<Product>> = flow {
+        val products = supabase.postgrest["products"].select().decodeList<Product>()
+        emit(products)
     }
 
     override suspend fun getProductById(id: String): Product? {
-        return productDao.getProductById(id)?.toDomainModel()
+        return supabase.postgrest["products"]
+            .select { filter { eq("id", id) } }
+            .decodeSingleOrNull<Product>()
     }
 
     override suspend fun insertProduct(product: Product) {
-        val entity = ProductEntity.fromDomainModel(product)
-        productDao.insertProduct(entity)
-        
-        val syncQueueEntity = SyncQueueEntity(
-            entity_type = "products",
-            entity_id = product.id,
-            operation = "CREATE",
-            payload = Json.encodeToString(product),
-            device_id = DeviceUtil.getDeviceId(context)
-        )
-        syncQueueDao.insert(syncQueueEntity)
+        supabase.postgrest["products"].insert(product)
     }
 
     override suspend fun updateProduct(product: Product) {
-        val entity = ProductEntity.fromDomainModel(product)
-        productDao.updateProduct(entity)
-
-        val syncQueueEntity = SyncQueueEntity(
-            entity_type = "products",
-            entity_id = product.id,
-            operation = "UPDATE",
-            payload = Json.encodeToString(product),
-            device_id = DeviceUtil.getDeviceId(context)
-        )
-        syncQueueDao.insert(syncQueueEntity)
+        supabase.postgrest["products"].update(product) {
+            filter { eq("id", product.id) }
+        }
     }
 
     override suspend fun getStockBatchesForProduct(productId: String): List<StockBatch> {
-        // TODO: Implement StockBatchDao and use it here
-        return emptyList()
+        return supabase.postgrest["stock_batches"]
+            .select { filter { eq("product_id", productId) } }
+            .decodeList<StockBatch>()
     }
 
     override suspend fun insertStockBatch(stockBatch: StockBatch) {
-        // TODO: Implement StockBatchDao and use it here
+        supabase.postgrest["stock_batches"].insert(stockBatch)
     }
 }

@@ -14,27 +14,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import java.util.UUID
+import com.devsoft.freshfood.domain.model.Profile
+import com.devsoft.freshfood.domain.repository.ProfileRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserManagementScreen(
     onOpenDrawer: () -> Unit,
-    profileRepository: com.devsoft.freshfood.domain.repository.ProfileRepository,
-    profileDao: com.devsoft.freshfood.data.local.dao.ProfileDao,
-    syncQueueDao: com.devsoft.freshfood.data.local.dao.SyncQueueDao
+    profileRepository: ProfileRepository
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    var editingProfile by remember { mutableStateOf<com.devsoft.freshfood.data.local.entity.ProfileEntity?>(null) }
+    var editingProfile by remember { mutableStateOf<Profile?>(null) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("DELIVERY") }
     
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val profiles by profileDao.getProfilesByRole("DELIVERY").collectAsState(initial = emptyList())
+    
+    var profiles by remember { mutableStateOf<List<Profile>>(emptyList()) }
+    
+    fun loadProfiles() {
+        scope.launch {
+            profileRepository.getProfilesByRole("DELIVERY").collect { loadedProfiles ->
+                profiles = loadedProfiles
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadProfiles()
+    }
 
     if (showDialog) {
         AlertDialog(
@@ -87,26 +98,14 @@ fun UserManagementScreen(
                                 )
                                 
                                 result.fold(
-                                    onSuccess = { newUserId ->
-                                        // Insert locally so it shows up in UI immediately before sync
-                                        val newProfile = com.devsoft.freshfood.data.local.entity.ProfileEntity(
-                                            id = newUserId,
-                                            first_name = firstName,
-                                            last_name = lastName,
-                                            phone = null,
-                                            role = "DELIVERY",
-                                            is_active = true,
-                                            created_at = java.time.Instant.now().toString(),
-                                            updated_at = java.time.Instant.now().toString()
-                                        )
-                                        profileDao.insertProfiles(listOf(newProfile))
-                                        
+                                    onSuccess = {
                                         showDialog = false
                                         email = ""
                                         password = ""
                                         firstName = ""
                                         lastName = ""
                                         android.widget.Toast.makeText(context, "Driver created successfully", android.widget.Toast.LENGTH_SHORT).show()
+                                        loadProfiles()
                                     },
                                     onFailure = { e ->
                                         android.widget.Toast.makeText(context, "Failed to create driver: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
@@ -120,27 +119,16 @@ fun UserManagementScreen(
                             scope.launch {
                                 val updated = editingProfile!!.copy(
                                     first_name = firstName,
-                                    last_name = lastName,
-                                    updated_at = java.time.Instant.now().toString()
+                                    last_name = lastName
                                 )
-                                profileDao.insertProfiles(listOf(updated))
                                 
-                                val syncOp = com.devsoft.freshfood.data.local.entity.SyncQueueEntity(
-                                    entity_type = "profiles",
-                                    entity_id = updated.id,
-                                    operation = "UPDATE",
-                                    payload = kotlinx.serialization.json.Json.encodeToString(
-                                        com.devsoft.freshfood.data.local.entity.ProfileEntity.serializer(), 
-                                        updated
-                                    ),
-                                    device_id = "admin_device"
-                                )
-                                syncQueueDao.insert(syncOp)
+                                profileRepository.updateProfile(updated)
                                 
                                 showDialog = false
                                 editingProfile = null
                                 firstName = ""
                                 lastName = ""
+                                loadProfiles()
                             }
                         }
                     }
@@ -202,26 +190,16 @@ fun UserManagementScreen(
                             Row {
                                 IconButton(onClick = {
                                     editingProfile = profile
-                                    firstName = profile.first_name
-                                    lastName = profile.last_name
+                                    firstName = profile.first_name ?: ""
+                                    lastName = profile.last_name ?: ""
                                     showDialog = true
                                 }) {
                                     Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
                                 }
                                 IconButton(onClick = {
                                     scope.launch {
-                                        profileDao.deleteProfileById(profile.id)
-                                        val syncOp = com.devsoft.freshfood.data.local.entity.SyncQueueEntity(
-                                            entity_type = "profiles",
-                                            entity_id = profile.id,
-                                            operation = "DELETE",
-                                            payload = kotlinx.serialization.json.Json.encodeToString(
-                                                com.devsoft.freshfood.data.local.entity.ProfileEntity.serializer(), 
-                                                profile
-                                            ),
-                                            device_id = "admin_device"
-                                        )
-                                        syncQueueDao.insert(syncOp)
+                                        profileRepository.deleteProfile(profile.id)
+                                        loadProfiles()
                                     }
                                 }) {
                                     Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
