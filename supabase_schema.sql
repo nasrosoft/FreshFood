@@ -97,7 +97,7 @@ CREATE TABLE stock_movements (
     product_id UUID REFERENCES products(id) ON DELETE CASCADE,
     batch_id UUID REFERENCES stock_batches(id) ON DELETE SET NULL,
     quantity INT NOT NULL,
-    movement_type TEXT NOT NULL CHECK (movement_type IN ('PURCHASE', 'SALE', 'RETURN', 'ADJUSTMENT', 'LOSS', 'EXPIRED', 'TRANSFER', 'DELIVERY_RETURN')),
+    movement_type TEXT NOT NULL CHECK (movement_type IN ('PURCHASE', 'SALE', 'RETURN', 'ADJUSTMENT', 'LOSS', 'EXPIRED', 'TRANSFER', 'DELIVERY_RETURN', 'DELIVERY')),
     reference_id UUID, -- Can refer to a purchase, sale, or return ID
     user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     notes TEXT,
