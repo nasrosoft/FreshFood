@@ -143,7 +143,7 @@ CREATE TABLE sale_items (
     sale_id UUID REFERENCES sales(id) ON DELETE CASCADE,
     product_id UUID REFERENCES products(id) ON DELETE CASCADE,
     batch_id UUID REFERENCES stock_batches(id) ON DELETE SET NULL,
-    quantity INT NOT NULL CHECK (quantity > 0),
+    quantity INT NOT NULL CHECK (quantity >= 0),
     unit_price DECIMAL(12, 2) NOT NULL,
     cost_price DECIMAL(12, 2) NOT NULL, -- Stored explicitly for historical profit calculation
     subtotal DECIMAL(12, 2) NOT NULL,
