@@ -4,6 +4,7 @@ import android.database.Cursor;
 import android.os.CancellationSignal;
 import androidx.annotation.NonNull;
 import androidx.room.CoroutinesRoom;
+import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
@@ -32,6 +33,8 @@ public final class SaleItemDao_Impl implements SaleItemDao {
 
   private final EntityInsertionAdapter<SaleItemEntity> __insertionAdapterOfSaleItemEntity;
 
+  private final EntityDeletionOrUpdateAdapter<SaleItemEntity> __updateAdapterOfSaleItemEntity;
+
   public SaleItemDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
     this.__insertionAdapterOfSaleItemEntity = new EntityInsertionAdapter<SaleItemEntity>(__db) {
@@ -55,6 +58,30 @@ public final class SaleItemDao_Impl implements SaleItemDao {
         } else {
           statement.bindString(7, entity.getCreated_at());
         }
+      }
+    };
+    this.__updateAdapterOfSaleItemEntity = new EntityDeletionOrUpdateAdapter<SaleItemEntity>(__db) {
+      @Override
+      @NonNull
+      protected String createQuery() {
+        return "UPDATE OR ABORT `sale_items` SET `id` = ?,`sale_id` = ?,`product_id` = ?,`quantity` = ?,`unit_price` = ?,`subtotal` = ?,`created_at` = ? WHERE `id` = ?";
+      }
+
+      @Override
+      protected void bind(@NonNull final SupportSQLiteStatement statement,
+          @NonNull final SaleItemEntity entity) {
+        statement.bindString(1, entity.getId());
+        statement.bindString(2, entity.getSale_id());
+        statement.bindString(3, entity.getProduct_id());
+        statement.bindLong(4, entity.getQuantity());
+        statement.bindDouble(5, entity.getUnit_price());
+        statement.bindDouble(6, entity.getSubtotal());
+        if (entity.getCreated_at() == null) {
+          statement.bindNull(7);
+        } else {
+          statement.bindString(7, entity.getCreated_at());
+        }
+        statement.bindString(8, entity.getId());
       }
     };
   }
@@ -88,6 +115,25 @@ public final class SaleItemDao_Impl implements SaleItemDao {
         __db.beginTransaction();
         try {
           __insertionAdapterOfSaleItemEntity.insert(saleItems);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object updateSaleItem(final SaleItemEntity saleItem,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __updateAdapterOfSaleItemEntity.handle(saleItem);
           __db.setTransactionSuccessful();
           return Unit.INSTANCE;
         } finally {

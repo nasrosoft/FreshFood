@@ -85,7 +85,7 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `products` (`id` TEXT NOT NULL, `barcode` TEXT, `name` TEXT NOT NULL, `category_id` TEXT, `brand_id` TEXT, `description` TEXT, `image_url` TEXT, `unit` TEXT NOT NULL, `purchase_price` REAL NOT NULL, `selling_price` REAL NOT NULL, `min_selling_price` REAL NOT NULL, `current_stock` INTEGER NOT NULL, `min_stock` INTEGER NOT NULL, `max_stock` INTEGER, `is_active` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `deleted_at` TEXT, PRIMARY KEY(`id`))");
@@ -103,12 +103,12 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
         db.execSQL("CREATE TABLE IF NOT EXISTS `inventory_sessions` (`id` TEXT NOT NULL, `date` TEXT, `status` TEXT NOT NULL, `conducted_by` TEXT, `notes` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `inventory_items` (`id` TEXT NOT NULL, `session_id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `expected_quantity` INTEGER NOT NULL, `actual_quantity` INTEGER NOT NULL, `difference` INTEGER, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `returns` (`id` TEXT NOT NULL, `date` TEXT, `customer_id` TEXT, `product_id` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `reason` TEXT, `status` TEXT NOT NULL, `created_by` TEXT, PRIMARY KEY(`id`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `delivery_orders` (`id` TEXT NOT NULL, `customer_id` TEXT, `delivery_employee_id` TEXT, `status` TEXT NOT NULL, `notes` TEXT, `created_at` TEXT, `updated_at` TEXT, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `delivery_orders` (`id` TEXT NOT NULL, `customer_id` TEXT, `sale_id` TEXT, `delivery_employee_id` TEXT, `status` TEXT NOT NULL, `notes` TEXT, `created_at` TEXT, `updated_at` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `delivery_items` (`id` TEXT NOT NULL, `delivery_order_id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `created_at` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `profiles` (`id` TEXT NOT NULL, `first_name` TEXT NOT NULL, `last_name` TEXT NOT NULL, `phone` TEXT, `role` TEXT NOT NULL, `is_active` INTEGER NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `notifications` (`id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `title` TEXT NOT NULL, `message` TEXT NOT NULL, `is_read` INTEGER NOT NULL, `created_at` TEXT NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3595b77c5c2a2cd965f6220a97f0c79a')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e796cd5a1596ee7288bcc8facb168af9')");
       }
 
       @Override
@@ -456,9 +456,10 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
                   + " Expected:\n" + _infoReturns + "\n"
                   + " Found:\n" + _existingReturns);
         }
-        final HashMap<String, TableInfo.Column> _columnsDeliveryOrders = new HashMap<String, TableInfo.Column>(7);
+        final HashMap<String, TableInfo.Column> _columnsDeliveryOrders = new HashMap<String, TableInfo.Column>(8);
         _columnsDeliveryOrders.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsDeliveryOrders.put("customer_id", new TableInfo.Column("customer_id", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDeliveryOrders.put("sale_id", new TableInfo.Column("sale_id", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsDeliveryOrders.put("delivery_employee_id", new TableInfo.Column("delivery_employee_id", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsDeliveryOrders.put("status", new TableInfo.Column("status", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsDeliveryOrders.put("notes", new TableInfo.Column("notes", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -524,7 +525,7 @@ public final class FreshFoodDatabase_Impl extends FreshFoodDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "3595b77c5c2a2cd965f6220a97f0c79a", "cb50a2dd00ac0a4bb3fece8761db53c0");
+    }, "e796cd5a1596ee7288bcc8facb168af9", "eafc13ab0814bd546112bcd731ab81e3");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

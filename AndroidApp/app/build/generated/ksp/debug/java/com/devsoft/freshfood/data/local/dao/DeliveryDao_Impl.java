@@ -41,7 +41,11 @@ public final class DeliveryDao_Impl implements DeliveryDao {
 
   private final EntityDeletionOrUpdateAdapter<DeliveryOrderEntity> __updateAdapterOfDeliveryOrderEntity;
 
+  private final EntityDeletionOrUpdateAdapter<DeliveryItemEntity> __updateAdapterOfDeliveryItemEntity;
+
   private final SharedSQLiteStatement __preparedStmtOfDeleteItemsForDeliveryOrder;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteDeliveryItemById;
 
   private final SharedSQLiteStatement __preparedStmtOfDeleteDeliveryOrderById;
 
@@ -51,7 +55,7 @@ public final class DeliveryDao_Impl implements DeliveryDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `delivery_orders` (`id`,`customer_id`,`delivery_employee_id`,`status`,`notes`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `delivery_orders` (`id`,`customer_id`,`sale_id`,`delivery_employee_id`,`status`,`notes`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -63,26 +67,31 @@ public final class DeliveryDao_Impl implements DeliveryDao {
         } else {
           statement.bindString(2, entity.getCustomer_id());
         }
-        if (entity.getDelivery_employee_id() == null) {
+        if (entity.getSale_id() == null) {
           statement.bindNull(3);
         } else {
-          statement.bindString(3, entity.getDelivery_employee_id());
+          statement.bindString(3, entity.getSale_id());
         }
-        statement.bindString(4, entity.getStatus());
-        if (entity.getNotes() == null) {
-          statement.bindNull(5);
+        if (entity.getDelivery_employee_id() == null) {
+          statement.bindNull(4);
         } else {
-          statement.bindString(5, entity.getNotes());
+          statement.bindString(4, entity.getDelivery_employee_id());
         }
-        if (entity.getCreated_at() == null) {
+        statement.bindString(5, entity.getStatus());
+        if (entity.getNotes() == null) {
           statement.bindNull(6);
         } else {
-          statement.bindString(6, entity.getCreated_at());
+          statement.bindString(6, entity.getNotes());
         }
-        if (entity.getUpdated_at() == null) {
+        if (entity.getCreated_at() == null) {
           statement.bindNull(7);
         } else {
-          statement.bindString(7, entity.getUpdated_at());
+          statement.bindString(7, entity.getCreated_at());
+        }
+        if (entity.getUpdated_at() == null) {
+          statement.bindNull(8);
+        } else {
+          statement.bindString(8, entity.getUpdated_at());
         }
       }
     };
@@ -111,7 +120,7 @@ public final class DeliveryDao_Impl implements DeliveryDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `delivery_orders` SET `id` = ?,`customer_id` = ?,`delivery_employee_id` = ?,`status` = ?,`notes` = ?,`created_at` = ?,`updated_at` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `delivery_orders` SET `id` = ?,`customer_id` = ?,`sale_id` = ?,`delivery_employee_id` = ?,`status` = ?,`notes` = ?,`created_at` = ?,`updated_at` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -123,28 +132,55 @@ public final class DeliveryDao_Impl implements DeliveryDao {
         } else {
           statement.bindString(2, entity.getCustomer_id());
         }
-        if (entity.getDelivery_employee_id() == null) {
+        if (entity.getSale_id() == null) {
           statement.bindNull(3);
         } else {
-          statement.bindString(3, entity.getDelivery_employee_id());
+          statement.bindString(3, entity.getSale_id());
         }
-        statement.bindString(4, entity.getStatus());
-        if (entity.getNotes() == null) {
-          statement.bindNull(5);
+        if (entity.getDelivery_employee_id() == null) {
+          statement.bindNull(4);
         } else {
-          statement.bindString(5, entity.getNotes());
+          statement.bindString(4, entity.getDelivery_employee_id());
         }
-        if (entity.getCreated_at() == null) {
+        statement.bindString(5, entity.getStatus());
+        if (entity.getNotes() == null) {
           statement.bindNull(6);
         } else {
-          statement.bindString(6, entity.getCreated_at());
+          statement.bindString(6, entity.getNotes());
         }
-        if (entity.getUpdated_at() == null) {
+        if (entity.getCreated_at() == null) {
           statement.bindNull(7);
         } else {
-          statement.bindString(7, entity.getUpdated_at());
+          statement.bindString(7, entity.getCreated_at());
         }
-        statement.bindString(8, entity.getId());
+        if (entity.getUpdated_at() == null) {
+          statement.bindNull(8);
+        } else {
+          statement.bindString(8, entity.getUpdated_at());
+        }
+        statement.bindString(9, entity.getId());
+      }
+    };
+    this.__updateAdapterOfDeliveryItemEntity = new EntityDeletionOrUpdateAdapter<DeliveryItemEntity>(__db) {
+      @Override
+      @NonNull
+      protected String createQuery() {
+        return "UPDATE OR ABORT `delivery_items` SET `id` = ?,`delivery_order_id` = ?,`product_id` = ?,`quantity` = ?,`created_at` = ? WHERE `id` = ?";
+      }
+
+      @Override
+      protected void bind(@NonNull final SupportSQLiteStatement statement,
+          @NonNull final DeliveryItemEntity entity) {
+        statement.bindString(1, entity.getId());
+        statement.bindString(2, entity.getDelivery_order_id());
+        statement.bindString(3, entity.getProduct_id());
+        statement.bindLong(4, entity.getQuantity());
+        if (entity.getCreated_at() == null) {
+          statement.bindNull(5);
+        } else {
+          statement.bindString(5, entity.getCreated_at());
+        }
+        statement.bindString(6, entity.getId());
       }
     };
     this.__preparedStmtOfDeleteItemsForDeliveryOrder = new SharedSQLiteStatement(__db) {
@@ -152,6 +188,14 @@ public final class DeliveryDao_Impl implements DeliveryDao {
       @NonNull
       public String createQuery() {
         final String _query = "DELETE FROM delivery_items WHERE delivery_order_id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfDeleteDeliveryItemById = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM delivery_items WHERE id = ?";
         return _query;
       }
     };
@@ -223,6 +267,25 @@ public final class DeliveryDao_Impl implements DeliveryDao {
   }
 
   @Override
+  public Object updateDeliveryItem(final DeliveryItemEntity item,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __updateAdapterOfDeliveryItemEntity.handle(item);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Object deleteItemsForDeliveryOrder(final String orderId,
       final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
@@ -243,6 +306,32 @@ public final class DeliveryDao_Impl implements DeliveryDao {
           }
         } finally {
           __preparedStmtOfDeleteItemsForDeliveryOrder.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteDeliveryItemById(final String id,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteDeliveryItemById.acquire();
+        int _argIndex = 1;
+        _stmt.bindString(_argIndex, id);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteDeliveryItemById.release(_stmt);
         }
       }
     }, $completion);
@@ -286,6 +375,7 @@ public final class DeliveryDao_Impl implements DeliveryDao {
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
           final int _cursorIndexOfCustomerId = CursorUtil.getColumnIndexOrThrow(_cursor, "customer_id");
+          final int _cursorIndexOfSaleId = CursorUtil.getColumnIndexOrThrow(_cursor, "sale_id");
           final int _cursorIndexOfDeliveryEmployeeId = CursorUtil.getColumnIndexOrThrow(_cursor, "delivery_employee_id");
           final int _cursorIndexOfStatus = CursorUtil.getColumnIndexOrThrow(_cursor, "status");
           final int _cursorIndexOfNotes = CursorUtil.getColumnIndexOrThrow(_cursor, "notes");
@@ -301,6 +391,12 @@ public final class DeliveryDao_Impl implements DeliveryDao {
               _tmpCustomer_id = null;
             } else {
               _tmpCustomer_id = _cursor.getString(_cursorIndexOfCustomerId);
+            }
+            final String _tmpSale_id;
+            if (_cursor.isNull(_cursorIndexOfSaleId)) {
+              _tmpSale_id = null;
+            } else {
+              _tmpSale_id = _cursor.getString(_cursorIndexOfSaleId);
             }
             final String _tmpDelivery_employee_id;
             if (_cursor.isNull(_cursorIndexOfDeliveryEmployeeId)) {
@@ -328,7 +424,7 @@ public final class DeliveryDao_Impl implements DeliveryDao {
             } else {
               _tmpUpdated_at = _cursor.getString(_cursorIndexOfUpdatedAt);
             }
-            _item = new DeliveryOrderEntity(_tmpId,_tmpCustomer_id,_tmpDelivery_employee_id,_tmpStatus,_tmpNotes,_tmpCreated_at,_tmpUpdated_at);
+            _item = new DeliveryOrderEntity(_tmpId,_tmpCustomer_id,_tmpSale_id,_tmpDelivery_employee_id,_tmpStatus,_tmpNotes,_tmpCreated_at,_tmpUpdated_at);
             _result.add(_item);
           }
           return _result;
@@ -360,6 +456,7 @@ public final class DeliveryDao_Impl implements DeliveryDao {
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
           final int _cursorIndexOfCustomerId = CursorUtil.getColumnIndexOrThrow(_cursor, "customer_id");
+          final int _cursorIndexOfSaleId = CursorUtil.getColumnIndexOrThrow(_cursor, "sale_id");
           final int _cursorIndexOfDeliveryEmployeeId = CursorUtil.getColumnIndexOrThrow(_cursor, "delivery_employee_id");
           final int _cursorIndexOfStatus = CursorUtil.getColumnIndexOrThrow(_cursor, "status");
           final int _cursorIndexOfNotes = CursorUtil.getColumnIndexOrThrow(_cursor, "notes");
@@ -374,6 +471,12 @@ public final class DeliveryDao_Impl implements DeliveryDao {
               _tmpCustomer_id = null;
             } else {
               _tmpCustomer_id = _cursor.getString(_cursorIndexOfCustomerId);
+            }
+            final String _tmpSale_id;
+            if (_cursor.isNull(_cursorIndexOfSaleId)) {
+              _tmpSale_id = null;
+            } else {
+              _tmpSale_id = _cursor.getString(_cursorIndexOfSaleId);
             }
             final String _tmpDelivery_employee_id;
             if (_cursor.isNull(_cursorIndexOfDeliveryEmployeeId)) {
@@ -401,7 +504,7 @@ public final class DeliveryDao_Impl implements DeliveryDao {
             } else {
               _tmpUpdated_at = _cursor.getString(_cursorIndexOfUpdatedAt);
             }
-            _result = new DeliveryOrderEntity(_tmpId,_tmpCustomer_id,_tmpDelivery_employee_id,_tmpStatus,_tmpNotes,_tmpCreated_at,_tmpUpdated_at);
+            _result = new DeliveryOrderEntity(_tmpId,_tmpCustomer_id,_tmpSale_id,_tmpDelivery_employee_id,_tmpStatus,_tmpNotes,_tmpCreated_at,_tmpUpdated_at);
           } else {
             _result = null;
           }

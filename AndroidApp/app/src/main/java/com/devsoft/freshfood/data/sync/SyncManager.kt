@@ -132,6 +132,38 @@ class SyncManager(
             Log.e("SyncManager", "Failed to pull customers: ${e.message}")
         }
         
+        // Delivery Orders
+        try {
+            val remoteDeliveryOrders = supabase.postgrest["delivery_orders"].select().decodeList<com.devsoft.freshfood.domain.model.DeliveryOrder>()
+            val entities = remoteDeliveryOrders.map { com.devsoft.freshfood.data.local.entity.DeliveryOrderEntity.fromDomainModel(it) }
+            val entitiesToInsert = entities.filter { !pendingEntityIds.contains(it.id) }
+            if (entitiesToInsert.isNotEmpty()) {
+                localDb.deliveryDao().insertDeliveryOrders(entitiesToInsert)
+            }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to pull delivery_orders: ${e.message}")
+        }
+        
+        // Delivery Items
+        try {
+            val remoteDeliveryItems = supabase.postgrest["delivery_items"].select().decodeList<com.devsoft.freshfood.domain.model.DeliveryItem>()
+            val entities = remoteDeliveryItems.map { 
+                com.devsoft.freshfood.data.local.entity.DeliveryItemEntity(
+                    id = it.id,
+                    delivery_order_id = it.delivery_order_id,
+                    product_id = it.product_id,
+                    quantity = it.quantity,
+                    created_at = it.created_at
+                ) 
+            }
+            val entitiesToInsert = entities.filter { !pendingEntityIds.contains(it.id) }
+            if (entitiesToInsert.isNotEmpty()) {
+                localDb.deliveryDao().insertDeliveryItems(entitiesToInsert)
+            }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to pull delivery_items: ${e.message}")
+        }
+        
         // Profiles
         try {
             val remoteProfiles = supabase.postgrest["profiles"].select().decodeList<com.devsoft.freshfood.data.local.entity.ProfileEntity>()

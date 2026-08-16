@@ -5,6 +5,7 @@ import android.os.CancellationSignal;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.CoroutinesRoom;
+import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
@@ -33,6 +34,8 @@ public final class SaleDao_Impl implements SaleDao {
   private final RoomDatabase __db;
 
   private final EntityInsertionAdapter<SaleEntity> __insertionAdapterOfSaleEntity;
+
+  private final EntityDeletionOrUpdateAdapter<SaleEntity> __updateAdapterOfSaleEntity;
 
   public SaleDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -74,6 +77,45 @@ public final class SaleDao_Impl implements SaleDao {
         }
       }
     };
+    this.__updateAdapterOfSaleEntity = new EntityDeletionOrUpdateAdapter<SaleEntity>(__db) {
+      @Override
+      @NonNull
+      protected String createQuery() {
+        return "UPDATE OR ABORT `sales` SET `id` = ?,`invoice_number` = ?,`customer_id` = ?,`user_id` = ?,`total_amount` = ?,`paid_amount` = ?,`credit_amount` = ?,`payment_method` = ?,`status` = ?,`deleted_at` = ? WHERE `id` = ?";
+      }
+
+      @Override
+      protected void bind(@NonNull final SupportSQLiteStatement statement,
+          @NonNull final SaleEntity entity) {
+        statement.bindString(1, entity.getId());
+        if (entity.getInvoice_number() == null) {
+          statement.bindNull(2);
+        } else {
+          statement.bindString(2, entity.getInvoice_number());
+        }
+        if (entity.getCustomer_id() == null) {
+          statement.bindNull(3);
+        } else {
+          statement.bindString(3, entity.getCustomer_id());
+        }
+        if (entity.getUser_id() == null) {
+          statement.bindNull(4);
+        } else {
+          statement.bindString(4, entity.getUser_id());
+        }
+        statement.bindDouble(5, entity.getTotal_amount());
+        statement.bindDouble(6, entity.getPaid_amount());
+        statement.bindDouble(7, entity.getCredit_amount());
+        statement.bindString(8, entity.getPayment_method());
+        statement.bindString(9, entity.getStatus());
+        if (entity.getDeleted_at() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindString(10, entity.getDeleted_at());
+        }
+        statement.bindString(11, entity.getId());
+      }
+    };
   }
 
   @Override
@@ -104,6 +146,24 @@ public final class SaleDao_Impl implements SaleDao {
         __db.beginTransaction();
         try {
           __insertionAdapterOfSaleEntity.insert(sales);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object updateSale(final SaleEntity sale, final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __updateAdapterOfSaleEntity.handle(sale);
           __db.setTransactionSuccessful();
           return Unit.INSTANCE;
         } finally {

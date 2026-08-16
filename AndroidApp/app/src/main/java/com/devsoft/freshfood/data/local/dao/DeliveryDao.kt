@@ -14,6 +14,9 @@ interface DeliveryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDeliveryOrder(order: DeliveryOrderEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertDeliveryOrders(orders: List<DeliveryOrderEntity>)
+
     @Update
     suspend fun updateDeliveryOrder(order: DeliveryOrderEntity)
 
