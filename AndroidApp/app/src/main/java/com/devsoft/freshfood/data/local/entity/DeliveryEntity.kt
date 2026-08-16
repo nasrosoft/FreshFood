@@ -9,6 +9,7 @@ import com.devsoft.freshfood.domain.model.DeliveryOrder
 data class DeliveryOrderEntity(
     @PrimaryKey val id: String,
     val customer_id: String? = null,
+    val sale_id: String? = null,
     val delivery_employee_id: String? = null,
     val status: String = "PENDING",
     val notes: String? = null,
@@ -19,6 +20,7 @@ data class DeliveryOrderEntity(
         return DeliveryOrder(
             id = id,
             customer_id = customer_id,
+            sale_id = sale_id,
             delivery_employee_id = delivery_employee_id,
             status = status,
             notes = notes,
@@ -32,6 +34,7 @@ data class DeliveryOrderEntity(
             return DeliveryOrderEntity(
                 id = order.id,
                 customer_id = order.customer_id,
+                sale_id = order.sale_id,
                 delivery_employee_id = order.delivery_employee_id,
                 status = order.status,
                 notes = order.notes,

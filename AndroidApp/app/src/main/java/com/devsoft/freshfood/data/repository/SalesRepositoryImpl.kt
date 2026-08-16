@@ -64,20 +64,19 @@ class SalesRepositoryImpl(
                     )
                 )
                 
-                if (!saleRequest.create_delivery) {
-                    stockMovements.add(
-                        StockMovementEntity(
-                            id = UUID.randomUUID().toString(),
-                            product_id = item.product_id,
-                            batch_id = null, // Backend process_sale RPC handles specific batch deduction
-                            movement_type = "SALE",
-                            quantity = -item.quantity, // Negative for OUT
-                            reference_id = saleId,
-                            user_id = saleRequest.user_id ?: "",
-                            created_at = createdAt
-                        )
+                // Always deduct stock for sales, regardless of create_delivery
+                stockMovements.add(
+                    StockMovementEntity(
+                        id = UUID.randomUUID().toString(),
+                        product_id = item.product_id,
+                        batch_id = null, // Backend process_sale RPC handles specific batch deduction
+                        movement_type = "SALE",
+                        quantity = -item.quantity, // Negative for OUT
+                        reference_id = saleId,
+                        user_id = saleRequest.user_id ?: "",
+                        created_at = createdAt
                     )
-                }
+                )
             }
             
             // 3. Optional Payment & Credit Entities
@@ -116,6 +115,7 @@ class SalesRepositoryImpl(
                 deliveryOrderEntity = DeliveryOrderEntity(
                     id = deliveryOrderId,
                     customer_id = saleRequest.customer_id,
+                    sale_id = saleId,
                     delivery_employee_id = saleRequest.delivery_employee_id,
                     status = "PENDING",
                     notes = "Created from POS Sale: INV-${saleId.take(8).uppercase()}",
@@ -151,15 +151,13 @@ class SalesRepositoryImpl(
                 database.saleDao().insertSale(saleEntity)
                 database.saleItemDao().insertSaleItems(saleItems)
                 
-                if (!saleRequest.create_delivery) {
-                    database.stockDao().insertStockMovements(stockMovements)
-                    // Deduct from product local stock
-                    saleRequest.items.forEach { item ->
-                        val product = database.productDao().getProductById(item.product_id)
-                        if (product != null) {
-                            val newStock = product.current_stock - item.quantity
-                            database.productDao().updateProduct(product.copy(current_stock = newStock))
-                        }
+                database.stockDao().insertStockMovements(stockMovements)
+                // Deduct from product local stock
+                saleRequest.items.forEach { item ->
+                    val product = database.productDao().getProductById(item.product_id)
+                    if (product != null) {
+                        val newStock = product.current_stock - item.quantity
+                        database.productDao().updateProduct(product.copy(current_stock = newStock))
                     }
                 }
                 
@@ -186,6 +184,7 @@ class SalesRepositoryImpl(
                         payload = Json.encodeToString(com.devsoft.freshfood.domain.model.DeliveryOrder(
                             id = it.id,
                             customer_id = it.customer_id,
+                            sale_id = it.sale_id,
                             delivery_employee_id = it.delivery_employee_id,
                             status = it.status,
                             notes = it.notes,

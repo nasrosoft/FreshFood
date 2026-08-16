@@ -108,18 +108,8 @@ class SyncManager(
             val remoteProducts = supabase.postgrest["products"].select().decodeList<com.devsoft.freshfood.domain.model.Product>()
             val remoteEntities = remoteProducts.map { com.devsoft.freshfood.data.local.entity.ProductEntity.fromDomainModel(it) }
             
-            // LOCAL IS MASTER FOR STOCK: Preserve local stock values
-            val localProductsList = localDb.productDao().getAllProducts().first()
-            val localStockMap = localProductsList.associate { it.id to it.current_stock }
-            
-            val entitiesToInsert = remoteEntities.map { remoteProd ->
-                val localStock = localStockMap[remoteProd.id]
-                if (localStock != null) {
-                    remoteProd.copy(current_stock = localStock)
-                } else {
-                    remoteProd
-                }
-            }.filter { !pendingEntityIds.contains(it.id) }
+            // Use remote stock as source of truth for products that don't have pending operations
+            val entitiesToInsert = remoteEntities.filter { !pendingEntityIds.contains(it.id) }
             
             if (entitiesToInsert.isNotEmpty()) {
                 localDb.productDao().insertProducts(entitiesToInsert)

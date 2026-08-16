@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
@@ -30,8 +31,19 @@ fun DeliveryDetailsScreen(
     val context = LocalContext.current
     var showPaymentDialog by remember { mutableStateOf(false) }
     var selectedPaymentMethod by remember { mutableStateOf("CASH") }
+    
+    val modifiedQuantities = remember { mutableStateMapOf<String, Int>() }
 
     val details = (uiState as? DeliveryUiState.Success)?.deliveries?.find { it.order.id == deliveryId }
+    
+    // Initialize modified quantities
+    androidx.compose.runtime.LaunchedEffect(details) {
+        if (details != null && modifiedQuantities.isEmpty()) {
+            details.items.forEach { itemDetail ->
+                modifiedQuantities[itemDetail.item.product_id] = itemDetail.item.quantity
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -86,7 +98,24 @@ IconButton(onClick = onBack) {
                 // Items List
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(details.items) { itemDetail ->
-                        DeliveryItemRow(itemDetail)
+                        val productId = itemDetail.item.product_id
+                        val currentQty = modifiedQuantities[productId] ?: itemDetail.item.quantity
+                        val originalQty = itemDetail.item.quantity
+                        
+                        DeliveryItemRow(
+                            itemDetail = itemDetail,
+                            isEditable = details.order.status == "OUT_FOR_DELIVERY",
+                            currentQty = currentQty,
+                            onDecrease = {
+                                if (currentQty > 0) modifiedQuantities[productId] = currentQty - 1
+                            },
+                            onIncrease = {
+                                if (currentQty < originalQty) modifiedQuantities[productId] = currentQty + 1
+                            },
+                            onRemove = {
+                                modifiedQuantities[productId] = 0
+                            }
+                        )
                     }
                 }
 
@@ -150,11 +179,22 @@ IconButton(onClick = onBack) {
             confirmButton = {
                 TextButton(onClick = {
                     showPaymentDialog = false
-                    viewModel.updateDeliveryStatus(details.order.id, "DELIVERED")
+                    
+                    // Save modified quantities and complete delivery
+                    viewModel.updateDeliveryItemsAndComplete(details.order.id, modifiedQuantities)
+                    
+                    // Create an updated details object for the receipt
+                    val updatedItems = details.items.mapNotNull { detail ->
+                        val newQty = modifiedQuantities[detail.item.product_id] ?: detail.item.quantity
+                        if (newQty > 0) {
+                            detail.copy(item = detail.item.copy(quantity = newQty))
+                        } else null
+                    }
+                    val updatedDetails = details.copy(items = updatedItems)
                     
                     val uri = com.devsoft.freshfood.utils.PdfReceiptGenerator.generateDeliveryReceipt(
                         context,
-                        details,
+                        updatedDetails,
                         selectedPaymentMethod
                     )
                     if (uri != null) {
@@ -179,19 +219,57 @@ IconButton(onClick = onBack) {
 }
 
 @Composable
-fun DeliveryItemRow(itemDetail: DeliveryItemDetail) {
+fun DeliveryItemRow(
+    itemDetail: DeliveryItemDetail,
+    isEditable: Boolean = false,
+    currentQty: Int = 0,
+    onDecrease: () -> Unit = {},
+    onIncrease: () -> Unit = {},
+    onRemove: () -> Unit = {}
+) {
+    if (currentQty == 0 && !isEditable) return // Don't show removed items if not editable
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = if (currentQty == 0) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer) else CardDefaults.cardColors()
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(itemDetail.product?.name ?: "Unknown Product", fontWeight = FontWeight.Bold)
-                Text("Qty: ${itemDetail.item.quantity}")
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    itemDetail.product?.name ?: "Unknown Product",
+                    fontWeight = FontWeight.Bold,
+                    color = if (currentQty == 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+                )
+                if (isEditable) {
+                    Text("Assigned: ${itemDetail.item.quantity}")
+                } else {
+                    Text("Qty: $currentQty")
+                }
+            }
+            
+            if (isEditable) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onDecrease) {
+                        Text("-", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                    }
+                    Text(
+                        currentQty.toString(),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    IconButton(onClick = onIncrease) {
+                        Text("+", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                    }
+                    IconButton(onClick = onRemove) {
+                        Text("X", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }

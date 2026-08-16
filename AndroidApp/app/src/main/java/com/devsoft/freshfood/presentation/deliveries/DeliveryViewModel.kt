@@ -60,6 +60,16 @@ class DeliveryViewModel(
             }
         }
     }
+
+    fun updateDeliveryItemsAndComplete(orderId: String, modifiedQuantities: Map<String, Int>) {
+        viewModelScope.launch {
+            try {
+                repository.updateDeliveryItemsAndComplete(orderId, modifiedQuantities)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }
 
 class DeliveryViewModelFactory(

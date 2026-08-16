@@ -21,6 +21,9 @@ interface SaleDao {
     
     @Query("SELECT * FROM sales WHERE id = :id")
     suspend fun getSaleById(id: String): SaleEntity?
+    
+    @androidx.room.Update
+    suspend fun updateSale(sale: SaleEntity)
 }
 
 @Dao
@@ -33,4 +36,7 @@ interface SaleItemDao {
 
     @Query("SELECT * FROM sale_items WHERE sale_id = :saleId")
     suspend fun getItemsForSale(saleId: String): List<SaleItemEntity>
+    
+    @androidx.room.Update
+    suspend fun updateSaleItem(saleItem: SaleItemEntity)
 }

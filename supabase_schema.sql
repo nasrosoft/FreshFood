@@ -177,6 +177,7 @@ CREATE TABLE credit_transactions (
 CREATE TABLE delivery_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    sale_id UUID REFERENCES sales(id) ON DELETE SET NULL,
     delivery_employee_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PARTIALLY_DELIVERED', 'CANCELLED')),
     notes TEXT,
@@ -251,44 +252,10 @@ DECLARE
     v_batch RECORD;
     v_qty_to_take INT;
 BEGIN
-    IF NEW.status = 'DELIVERED' AND OLD.status != 'DELIVERED' THEN
-        FOR v_item IN SELECT * FROM delivery_items WHERE delivery_order_id = NEW.id
-        LOOP
-            v_qty_needed := v_item.quantity;
-            
-            -- Simple FEFO for delivery completion
-            FOR v_batch IN 
-                SELECT id, quantity FROM stock_batches 
-                WHERE product_id = v_item.product_id AND quantity > 0
-                ORDER BY expiration_date ASC
-            LOOP
-                IF v_qty_needed <= 0 THEN
-                    EXIT;
-                END IF;
-
-                IF v_batch.quantity >= v_qty_needed THEN
-                    v_qty_to_take := v_qty_needed;
-                ELSE
-                    v_qty_to_take := v_batch.quantity;
-                END IF;
-
-                UPDATE stock_batches SET quantity = quantity - v_qty_to_take WHERE id = v_batch.id;
-                UPDATE products SET current_stock = current_stock - v_qty_to_take WHERE id = v_item.product_id;
-
-                INSERT INTO stock_movements (product_id, batch_id, quantity, movement_type, reference_id, user_id)
-                VALUES (v_item.product_id, v_batch.id, -v_qty_to_take, 'DELIVERY', NEW.id, NEW.delivery_employee_id);
-
-                v_qty_needed := v_qty_needed - v_qty_to_take;
-            END LOOP;
-
-            IF v_qty_needed > 0 THEN
-                UPDATE products SET current_stock = current_stock - v_qty_needed WHERE id = v_item.product_id;
-                INSERT INTO stock_movements (product_id, batch_id, quantity, movement_type, reference_id, user_id)
-                VALUES (v_item.product_id, NULL, -v_qty_needed, 'DELIVERY', NEW.id, NEW.delivery_employee_id);
-            END IF;
-        END LOOP;
-    ELSIF OLD.status = 'DELIVERED' AND NEW.status != 'DELIVERED' THEN
-        -- Restock if it was delivered and now is returned/cancelled
+    -- Stock reduction logic is now handled in process_sale immediately upon sale.
+    -- We only handle restocking here if the delivery is cancelled.
+    IF NEW.status = 'CANCELLED' AND OLD.status != 'CANCELLED' THEN
+        -- Restock if it was cancelled
         FOR v_item IN SELECT * FROM delivery_items WHERE delivery_order_id = NEW.id
         LOOP
             UPDATE products SET current_stock = current_stock + v_item.quantity WHERE id = v_item.product_id;
@@ -304,6 +271,72 @@ CREATE TRIGGER trigger_process_delivery_stock
 AFTER UPDATE ON delivery_orders
 FOR EACH ROW EXECUTE PROCEDURE process_delivery_stock();
 
+-- Trigger to restock and adjust financials when a delivery item is modified by a driver
+CREATE OR REPLACE FUNCTION handle_delivery_item_modification()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_diff INT;
+    v_sale_id UUID;
+    v_customer_id UUID;
+    v_user_id UUID;
+    v_sale_item RECORD;
+    v_unit_price DECIMAL(12,2);
+    v_refund_amount DECIMAL(12,2);
+BEGIN
+    -- Only proceed if it's an UPDATE (quantity reduced) or DELETE
+    IF TG_OP = 'DELETE' THEN
+        v_diff := OLD.quantity;
+    ELSIF TG_OP = 'UPDATE' AND NEW.quantity < OLD.quantity THEN
+        v_diff := OLD.quantity - NEW.quantity;
+    ELSE
+        RETURN COALESCE(NEW, OLD);
+    END IF;
+
+    -- Get the delivery order to find sale_id and customer_id
+    SELECT sale_id, customer_id, delivery_employee_id INTO v_sale_id, v_customer_id, v_user_id
+    FROM delivery_orders WHERE id = OLD.delivery_order_id;
+
+    -- 1. Restock physical item
+    UPDATE products SET current_stock = current_stock + v_diff WHERE id = OLD.product_id;
+    INSERT INTO stock_movements (product_id, batch_id, quantity, movement_type, reference_id, user_id)
+    VALUES (OLD.product_id, NULL, v_diff, 'DELIVERY_RETURN', OLD.delivery_order_id, v_user_id);
+
+    -- 2. If linked to a sale, adjust financial records
+    IF v_sale_id IS NOT NULL THEN
+        -- Find the corresponding sale_item
+        SELECT * INTO v_sale_item FROM sale_items 
+        WHERE sale_id = v_sale_id AND product_id = OLD.product_id LIMIT 1;
+        
+        IF FOUND THEN
+            v_unit_price := v_sale_item.unit_price;
+            v_refund_amount := v_diff * v_unit_price;
+
+            -- Update sale_items
+            UPDATE sale_items 
+            SET quantity = quantity - v_diff, 
+                subtotal = subtotal - v_refund_amount
+            WHERE id = v_sale_item.id;
+
+            -- UPDATE sales table
+            UPDATE sales 
+            SET total_amount = total_amount - v_refund_amount
+            WHERE id = v_sale_id;
+            
+            -- Insert a PAYMENT credit transaction to reduce customer's debt for the returned items
+            IF v_customer_id IS NOT NULL THEN
+                INSERT INTO credit_transactions (customer_id, amount, transaction_type, reference_id, user_id)
+                VALUES (v_customer_id, v_refund_amount, 'PAYMENT', v_sale_id, v_user_id);
+            END IF;
+        END IF;
+    END IF;
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_delivery_item_modified
+AFTER UPDATE OR DELETE ON delivery_items
+FOR EACH ROW EXECUTE PROCEDURE handle_delivery_item_modification();
 
 
 -- FEFO RPC: Process a sale automatically handling batches
@@ -363,7 +396,8 @@ BEGIN
         -- Get product purchase price as default cost if batches run out somehow
         SELECT purchase_price INTO v_cost_price FROM products WHERE id = v_product_id;
 
-        IF NOT COALESCE((sale_data->>'create_delivery')::BOOLEAN, FALSE) THEN
+        -- Always deduct stock, even for deliveries, because the physical stock is reserved/leaves the store
+        IF TRUE THEN
             -- Iterate over batches ordered by expiration date (FEFO)
             FOR v_batch IN 
                 SELECT id, quantity FROM stock_batches 
@@ -406,10 +440,6 @@ BEGIN
                 INSERT INTO sale_items (sale_id, product_id, batch_id, quantity, unit_price, cost_price, subtotal)
                 VALUES (v_sale_id, v_product_id, NULL, v_qty_needed, v_unit_price, v_cost_price, v_qty_needed * v_unit_price);
             END IF;
-        ELSE
-            -- Delivery is being created, just record sale item without stock deduction
-            INSERT INTO sale_items (sale_id, product_id, batch_id, quantity, unit_price, cost_price, subtotal)
-            VALUES (v_sale_id, v_product_id, NULL, v_qty_needed, v_unit_price, v_cost_price, v_qty_needed * v_unit_price);
         END IF;
     END LOOP;
 
