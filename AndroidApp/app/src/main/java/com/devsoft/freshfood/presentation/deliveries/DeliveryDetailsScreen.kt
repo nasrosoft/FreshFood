@@ -11,11 +11,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.devsoft.freshfood.domain.model.DeliveryItemDetail
@@ -34,6 +35,12 @@ fun DeliveryDetailsScreen(
     var selectedPaymentMethod by remember { mutableStateOf("CASH") }
     
     val modifiedQuantities = remember { mutableStateMapOf<String, Int>() }
+
+    LaunchedEffect(Unit) {
+        viewModel.errorMessage.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     val details = (uiState as? DeliveryUiState.Success)?.deliveries?.find { it.order.id == deliveryId }
     

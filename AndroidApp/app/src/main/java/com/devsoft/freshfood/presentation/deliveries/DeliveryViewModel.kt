@@ -24,6 +24,9 @@ class DeliveryViewModel(
     private val _uiState = MutableStateFlow<DeliveryUiState>(DeliveryUiState.Loading)
     val uiState: StateFlow<DeliveryUiState> = _uiState.asStateFlow()
 
+    private val _errorMessage = MutableSharedFlow<String>()
+    val errorMessage = _errorMessage.asSharedFlow()
+
     init {
         // loadDeliveries is called from LaunchedEffect in the UI
     }
@@ -68,6 +71,7 @@ class DeliveryViewModel(
                 loadDeliveries() // Refresh UI after completion
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.emit("Error updating delivery: ${e.message}")
             }
         }
     }
