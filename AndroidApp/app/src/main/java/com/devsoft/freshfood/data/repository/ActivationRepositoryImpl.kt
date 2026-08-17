@@ -21,11 +21,38 @@ class ActivationRepositoryImpl(
             if (setting != null) {
                 Result.success(setting.app_enabled == 1)
             } else {
-                // If table exists but empty, default to blocked until explicitly enabled
                 Result.success(false)
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getAppSettings(): Result<AppSetting> = withContext(Dispatchers.IO) {
+        try {
+            val list = supabase.postgrest["app_settings"]
+                .select()
+                .decodeList<AppSetting>()
+            val setting = list.firstOrNull() ?: AppSetting()
+            Result.success(setting)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateBrandSettings(brandName: String, brandTagline: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            supabase.postgrest["app_settings"].update(
+                mapOf(
+                    "brand_name" to brandName,
+                    "brand_tagline" to brandTagline
+                )
+            ) {
+                filter { eq("id", 1) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

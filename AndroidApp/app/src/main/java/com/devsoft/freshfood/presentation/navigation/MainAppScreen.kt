@@ -23,6 +23,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.devsoft.freshfood.domain.model.AppSetting
+import com.devsoft.freshfood.domain.model.Profile
+import com.devsoft.freshfood.domain.repository.ActivationRepository
 import com.devsoft.freshfood.domain.repository.ProfileRepository
 import com.devsoft.freshfood.presentation.customers.AddCustomerScreen
 import com.devsoft.freshfood.presentation.customers.CustomersScreen
@@ -61,6 +64,7 @@ fun MainAppScreen(
     inventoryViewModel: InventoryViewModel,
     returnsViewModel: ReturnsViewModel,
     profileRepository: ProfileRepository,
+    activationRepository: ActivationRepository? = null,
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -68,6 +72,44 @@ fun MainAppScreen(
     val currentRoute = navBackStackEntry?.destination?.route ?: if (userRole == "DELIVERY") "deliveries" else "dashboard"
     val context = androidx.compose.ui.platform.LocalContext.current
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showParametrageDialog by remember { mutableStateOf(false) }
+
+    // Dynamic brand settings from Supabase
+    var brandName by remember { mutableStateOf("Fresh Dairy") }
+    var brandTagline by remember { mutableStateOf("Stock & Sales Management") }
+    var editBrandName by remember { mutableStateOf("Fresh Dairy") }
+    var editBrandTagline by remember { mutableStateOf("Stock & Sales Management") }
+    var isSavingBrand by remember { mutableStateOf(false) }
+
+    // Dynamic user profile from Supabase
+    var userProfile by remember { mutableStateOf<Profile?>(null) }
+
+    LaunchedEffect(userId) {
+        if (!userId.isNullOrBlank()) {
+            userProfile = profileRepository.getProfileById(userId)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        activationRepository?.getAppSettings()?.onSuccess { setting: AppSetting ->
+            val fetchedName = setting.brand_name?.ifBlank { "Fresh Dairy" } ?: "Fresh Dairy"
+            val fetchedTagline = setting.brand_tagline?.ifBlank { "Stock & Sales Management" } ?: "Stock & Sales Management"
+            brandName = fetchedName
+            brandTagline = fetchedTagline
+            editBrandName = fetchedName
+            editBrandTagline = fetchedTagline
+        }
+    }
+
+    val userDisplayName = remember(userProfile, userRole) {
+        if (userProfile != null) {
+            listOfNotNull(userProfile?.first_name, userProfile?.last_name)
+                .joinToString(" ")
+                .ifBlank { userProfile?.email ?: (if (userRole == "DELIVERY") "Delivery Driver" else "Administrator") }
+        } else {
+            if (userRole == "DELIVERY") "Delivery Driver" else "Administrator"
+        }
+    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -80,7 +122,7 @@ fun MainAppScreen(
                 drawerContainerColor = CardSurface,
                 modifier = Modifier.width(300.dp)
             ) {
-                // Sidebar Brand Banner (from reference UI)
+                // Sidebar Brand Banner (from Supabase)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -100,13 +142,13 @@ fun MainAppScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                "Fresh Dairy",
+                                brandName,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = PrimaryBlueDark
                             )
                             Text(
-                                "Stock & Sales Management",
+                                brandTagline,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextMuted
                             )
@@ -115,7 +157,7 @@ fun MainAppScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // User Badge
+                    // Real User Badge from Supabase
                     Card(
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = CardSurface)
@@ -136,7 +178,7 @@ fun MainAppScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    if (isDelivery) "Delivery Driver" else "Mohamed Admin",
+                                    userDisplayName,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -223,6 +265,19 @@ fun MainAppScreen(
                 Spacer(modifier = Modifier.weight(1f))
                 Divider(modifier = Modifier.padding(horizontal = 16.dp), color = CardBorder)
 
+                // Paramétrage Button
+                DrawerItem(
+                    icon = Icons.Filled.Build,
+                    label = "Paramétrage",
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        editBrandName = brandName
+                        editBrandTagline = brandTagline
+                        showParametrageDialog = true
+                    }
+                )
+
                 DrawerItem(
                     icon = Icons.Filled.Settings,
                     label = "Language / اللغة / Langue",
@@ -248,6 +303,79 @@ fun MainAppScreen(
             }
         }
     ) {
+        // Paramétrage Modal Dialog
+        if (showParametrageDialog) {
+            AlertDialog(
+                onDismissRequest = { if (!isSavingBrand) showParametrageDialog = false },
+                title = { Text("Paramétrage / Brand Settings", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text("Customize your store or brand identity:", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        OutlinedTextField(
+                            value = editBrandName,
+                            onValueChange = { editBrandName = it },
+                            label = { Text("Brand Name / Nom Commercial") },
+                            placeholder = { Text("e.g. Fresh Dairy") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = editBrandTagline,
+                            onValueChange = { editBrandTagline = it },
+                            label = { Text("Tagline / Description") },
+                            placeholder = { Text("e.g. Stock & Sales Management") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (editBrandName.isNotBlank()) {
+                                isSavingBrand = true
+                                scope.launch {
+                                    activationRepository?.updateBrandSettings(editBrandName.trim(), editBrandTagline.trim())?.fold(
+                                        onSuccess = {
+                                            brandName = editBrandName.trim()
+                                            brandTagline = editBrandTagline.trim()
+                                            isSavingBrand = false
+                                            showParametrageDialog = false
+                                            android.widget.Toast.makeText(context, "Brand updated successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                                        },
+                                        onFailure = { error: Throwable ->
+                                            isSavingBrand = false
+                                            android.widget.Toast.makeText(context, "Failed to update: ${error.message}", android.widget.Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }
+                            }
+                        },
+                        enabled = !isSavingBrand && editBrandName.isNotBlank(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        if (isSavingBrand) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Saving...")
+                        } else {
+                            Text("Save to Supabase")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showParametrageDialog = false }, enabled = !isSavingBrand) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
         if (showLanguageDialog) {
             val currentLang = LocaleHelper.getPersistedLanguage(context)
             val languages = listOf(

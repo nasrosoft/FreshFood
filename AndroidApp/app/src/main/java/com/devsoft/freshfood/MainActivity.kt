@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
                                 inventoryViewModel = viewModel(factory = inventoryFactory),
                                 returnsViewModel = viewModel(factory = returnsFactory),
                                 profileRepository = profileRepo,
+                                activationRepository = activationRepo,
                                 onLogout = { authViewModel.logout() }
                             )
                         } else {
