@@ -8,6 +8,7 @@ interface DashboardRepository {
     suspend fun getSales(): List<Sale>
     suspend fun getCustomers(): List<Customer>
     suspend fun getProducts(): List<Product>
+    suspend fun getDeliveryOrders(): List<com.devsoft.freshfood.domain.model.DeliveryOrder>
     
     suspend fun getTodaySalesTotal(): Double
     suspend fun getTodayProfitTotal(): Double

@@ -35,6 +35,14 @@ class DashboardRepositoryImpl(
         }
     }
 
+    override suspend fun getDeliveryOrders(): List<com.devsoft.freshfood.domain.model.DeliveryOrder> {
+        return try {
+            supabase.postgrest["delivery_orders"].select().decodeList<com.devsoft.freshfood.domain.model.DeliveryOrder>()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     override suspend fun getTodaySalesTotal(): Double {
         return getSales().sumOf { it.total_amount }
     }

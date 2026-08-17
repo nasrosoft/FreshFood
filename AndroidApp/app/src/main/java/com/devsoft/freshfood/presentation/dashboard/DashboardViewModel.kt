@@ -42,6 +42,9 @@ data class DashboardState(
     val profitTotal: Double = 0.0,
     val totalCredit: Double = 0.0,
     val lowStockProducts: List<Product> = emptyList(),
+    val totalDeliveriesToday: Int = 0,
+    val completedDeliveriesToday: Int = 0,
+    val pendingDeliveriesToday: Int = 0,
     val selectedDetailType: DashboardDetailType = DashboardDetailType.NONE,
     val isLoading: Boolean = false,
     val error: String? = null
@@ -65,6 +68,7 @@ class DashboardViewModel(
                 val sales = repository.getSales()
                 val customers = repository.getCustomers()
                 val products = repository.getProducts()
+                val deliveries = repository.getDeliveryOrders()
                 
                 val currentRange = _uiState.value.timeRange
                 val filteredSales = filterSalesByRange(sales, currentRange)
@@ -72,6 +76,31 @@ class DashboardViewModel(
                 val profitTotal = salesTotal * 0.20 // 20% estimated margin
                 val totalCredit = customers.sumOf { it.current_credit }
                 val lowStock = products.filter { it.current_stock <= it.min_stock }
+
+                val today = LocalDate.now()
+                val todayDeliveries = deliveries.filter { order ->
+                    val timestamp = order.updated_at ?: order.created_at
+                    if (timestamp != null) {
+                        try {
+                            val orderDate = try {
+                                OffsetDateTime.parse(timestamp).atZoneSameInstant(ZoneId.systemDefault()).toLocalDate()
+                            } catch (e: Exception) {
+                                Instant.parse(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+                            }
+                            orderDate == today
+                        } catch (e: Exception) {
+                            true
+                        }
+                    } else {
+                        true
+                    }
+                }
+
+                val totalDeliveries = todayDeliveries.size
+                val completedDeliveries = todayDeliveries.count { it.status == "DELIVERED" }
+                val pendingDeliveries = todayDeliveries.count { 
+                    it.status == "PENDING" || it.status == "ASSIGNED" || it.status == "OUT_FOR_DELIVERY" 
+                }
 
                 _uiState.update { 
                     it.copy(
@@ -83,6 +112,9 @@ class DashboardViewModel(
                         profitTotal = profitTotal,
                         totalCredit = totalCredit,
                         lowStockProducts = lowStock,
+                        totalDeliveriesToday = totalDeliveries,
+                        completedDeliveriesToday = completedDeliveries,
+                        pendingDeliveriesToday = pendingDeliveries,
                         isLoading = false
                     ) 
                 }

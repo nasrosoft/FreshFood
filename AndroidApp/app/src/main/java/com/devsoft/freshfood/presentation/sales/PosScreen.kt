@@ -291,11 +291,13 @@ fun PosScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(productsState.filteredProducts) { product ->
+                    val isLowStock = product.current_stock <= product.min_stock
+                    val inCartQty = uiState.cartItems.find { it.product.id == product.id }?.quantity ?: 0
                     Card(
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = CardSurface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        modifier = Modifier.width(130.dp)
+                        modifier = Modifier.width(136.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(10.dp).fillMaxWidth(),
@@ -322,16 +324,52 @@ fun PosScreen(
                                 color = PrimaryBlue,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            // Available Stock Quantity Badge
                             Box(
                                 modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(PrimaryBlue)
-                                    .clickable { viewModel.addToCart(product) },
-                                contentAlignment = Alignment.Center
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(if (isLowStock) StatusWarningContainer else StatusSuccessContainer)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
-                                Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(16.dp))
+                                Text(
+                                    text = "Stock: ${product.current_stock}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isLowStock) StatusWarning else StatusSuccess
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                if (inCartQty > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(PrimaryBlueContainer)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "${inCartQty} in cart",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryBlue
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(PrimaryBlue)
+                                        .clickable { viewModel.addToCart(product) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(16.dp))
+                                }
                             }
                         }
                     }

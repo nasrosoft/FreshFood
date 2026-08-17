@@ -253,9 +253,9 @@ fun DashboardScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceAround
                             ) {
-                                DeliveryCounterItem(count = "15", label = "Total", color = PrimaryBlue)
-                                DeliveryCounterItem(count = "10", label = "Completed", color = StatusSuccess)
-                                DeliveryCounterItem(count = "5", label = "Pending", color = StatusWarning)
+                                DeliveryCounterItem(count = "${uiState.totalDeliveriesToday}", label = "Total", color = PrimaryBlue)
+                                DeliveryCounterItem(count = "${uiState.completedDeliveriesToday}", label = "Completed", color = StatusSuccess)
+                                DeliveryCounterItem(count = "${uiState.pendingDeliveriesToday}", label = "Pending", color = StatusWarning)
                             }
                         }
                     }
