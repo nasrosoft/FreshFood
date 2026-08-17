@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.devsoft.freshfood.R
 import com.devsoft.freshfood.domain.model.Customer
 import com.devsoft.freshfood.domain.model.Product
 import com.devsoft.freshfood.domain.model.Profile
@@ -216,7 +218,7 @@ fun PosScreen(
                                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = PrimaryBlueDark)
                             }
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("New Sale", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text(stringResource(R.string.new_sale), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
                         }
                         com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                     }
@@ -225,7 +227,7 @@ fun PosScreen(
                     OutlinedTextField(
                         value = productsState.searchQuery,
                         onValueChange = { productsViewModel.updateSearchQuery(it) },
-                        placeholder = { Text("Scan barcode or search product...", color = TextMuted, fontSize = 14.sp) },
+                        placeholder = { Text(stringResource(R.string.scan_or_search), color = TextMuted, fontSize = 14.sp) },
                         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
                         trailingIcon = {
                             IconButton(onClick = { showScanner = true }) {
@@ -266,7 +268,7 @@ fun PosScreen(
                     onClick = { showCustomerDialog = true },
                     label = { 
                         Text(
-                            selectedCustomer?.name ?: "Select Customer", 
+                            selectedCustomer?.name ?: stringResource(R.string.select_customer), 
                             fontSize = 12.sp,
                             fontWeight = if (selectedCustomer != null) FontWeight.Bold else FontWeight.Normal
                         ) 
@@ -284,7 +286,7 @@ fun PosScreen(
                     },
                     label = { 
                         Text(
-                            if (createDelivery) (selectedDriver?.first_name ?: "Assign Driver") else "Delivery",
+                            if (createDelivery) (selectedDriver?.first_name ?: stringResource(R.string.assign_driver)) else stringResource(R.string.delivery),
                             fontSize = 12.sp
                         ) 
                     },
@@ -294,7 +296,7 @@ fun PosScreen(
 
             // Quick Add Horizontal List (matching reference design)
             Text(
-                "Quick Add",
+                stringResource(R.string.quick_add),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextDark,
@@ -348,7 +350,7 @@ fun PosScreen(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "Stock: ${product.current_stock}",
+                                    text = stringResource(R.string.stock_label, product.current_stock),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (isLowStock) StatusWarning else StatusSuccess
@@ -367,7 +369,7 @@ fun PosScreen(
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
-                                            text = "${inCartQty} in cart",
+                                            text = stringResource(R.string.in_cart, inCartQty),
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = PrimaryBlue

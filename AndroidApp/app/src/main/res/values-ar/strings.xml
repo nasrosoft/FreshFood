@@ -1,45 +1,86 @@
 <resources>
     <string name="app_name">FreshFood</string>
+    <string name="brand_default">Fresh Dairy</string>
+    <string name="brand_tagline_default">إدارة المخزون والمبيعات</string>
+
+    <!-- Navigation -->
     <string name="dashboard">لوحة التحكم</string>
-    <string name="business_dashboard">لوحة تحكم الأعمال</string>
-    <string name="overview">نظرة عامة</string>
-    <string name="sales_today">مبيعات اليوم</string>
-    <string name="profit_today">أرباح اليوم</string>
-    <string name="customer_credit">ديون الزبائن</string>
-    <string name="low_stock">نقص المخزون</string>
-    <string name="pos">نقطة البيع</string>
-    <string name="deliveries">التوصيلات</string>
+    <string name="sales_pos">المبيعات (POS)</string>
+    <string name="sales">المبيعات</string>
     <string name="products">المنتجات</string>
     <string name="customers">الزبائن</string>
     <string name="purchase_entry">إدخال المشتريات</string>
     <string name="users_drivers">المستخدمين / السائقين</string>
+    <string name="deliveries">التوصيلات</string>
+    <string name="parametrage">الإعدادات / Paramétrage</string>
+    <string name="language">اللغة / Langue / Language</string>
     <string name="logout">تسجيل الخروج</string>
+    <string name="admin_role">المدير</string>
+    <string name="delivery_role">عامل التوصيل</string>
+
+    <!-- Dashboard -->
+    <string name="good_morning">صباح الخير</string>
+    <string name="admin">المدير</string>
+    <string name="todays_sales">مبيعات اليوم</string>
+    <string name="vs_yesterday">+12.5% مقارنة بالأمس</string>
+    <string name="profit_day">أرباح اليوم</string>
+    <string name="est_margin">هامش ربح تقديري 20%</string>
+    <string name="stock_value">قيمة المخزون</string>
+    <string name="alerts">التنبيهات</string>
+    <string name="products_low_stock">%d منتجات ذات مخزون منخفض</string>
+    <string name="products_expiring_soon">منتجات تقترب صلاحيتها</string>
+    <string name="check_batch_expiration">فحص تواريخ انتهاء الدفعات</string>
+    <string name="todays_deliveries">توصيلات اليوم</string>
+    <string name="total">الإجمالي</string>
+    <string name="completed">المكتملة</string>
+    <string name="pending">قيد الانتظار</string>
+    <string name="sales_overview">نظرة عامة على المبيعات</string>
     <string name="day">يوم</string>
     <string name="week">أسبوع</string>
     <string name="month">شهر</string>
     <string name="all_time">الكل</string>
-    <string name="pending">قيد الانتظار</string>
-    <string name="out_for_delivery">قيد التوصيل</string>
-    <string name="delivered">تم التوصيل</string>
-    <string name="today">اليوم</string>
-    <string name="confirm_delivered">تأكيد التوصيل</string>
-    <string name="driver">السائق</string>
-    <string name="customer">الزبون</string>
-    <string name="barcode">الباركود</string>
-    <string name="product_name">اسم المنتج</string>
-    <string name="quantity">الكمية</string>
-    <string name="purchase_price">سعر الشراء</string>
-    <string name="selling_price">سعر البيع</string>
-    <string name="margin">نسبة الهامش (%)</string>
-    <string name="expiration_date">تاريخ انتهاء الصلاحية</string>
-    <string name="add_item">إضافة عنصر</string>
-    <string name="validate_purchase">تأكيد الشراء</string>
-    <string name="search">بحث</string>
-    <string name="cancel">إلغاء</string>
-    <string name="add">إضافة</string>
-    <string name="close">إغلاق</string>
+    <string name="customer_credit">ديون الزبائن</string>
+    <string name="low_stock">نقص المخزون</string>
+    <string name="overview">نظرة عامة</string>
+
+    <!-- Details Dialogs -->
+    <string name="sales_details">تفاصيل المبيعات</string>
+    <string name="profit_details">تفاصيل الأرباح</string>
+    <string name="credit_details">تفاصيل ديون الزبائن</string>
+    <string name="low_stock_details">المنتجات منخفضة المخزون</string>
+    <string name="no_sales_found">لا توجد مبيعات مسجلة لهذه الفترة.</string>
+    <string name="no_credit_found">لا توجد ديون مسجلة على الزبائن.</string>
+    <string name="all_in_stock">جميع المنتجات متوفرة بكميات كافية!</string>
+    <string name="order">طلب</string>
+    <string name="time">الوقت</string>
+    <string name="items">عناصر</string>
+
+    <!-- POS -->
+    <string name="new_sale">بيع جديد</string>
+    <string name="quick_add">إضافة سريعة</string>
+    <string name="scan_or_search">امسح الباركود أو ابحث عن منتج...</string>
+    <string name="select_customer">اختر الزبون</string>
+    <string name="delivery">توصيل</string>
+    <string name="assign_driver">تعيين سائق</string>
+    <string name="stock_label">المخزون: %d</string>
+    <string name="in_cart">%d في السلة</string>
+    <string name="current_cart">السلة الحالية</string>
+    <string name="empty_cart">السلة فارغة. اضغط على المنتجات أعلاه للإضافة.</string>
+    <string name="payment_method">طريقة الدفع</string>
+    <string name="cash">نقداً</string>
+    <string name="bank">بنك / بطاقة</string>
+    <string name="credit">دين</string>
+    <string name="checkout">إتمام البيع</string>
+    <string name="invoice">الفاتورة</string>
+    <string name="print_share_pdf">طباعة / مشاركة PDF</string>
+
+    <!-- Generic Actions -->
     <string name="save">حفظ</string>
-    <string name="language">اللغة</string>
+    <string name="cancel">إلغاء</string>
+    <string name="close">إغلاق</string>
+    <string name="search">بحث</string>
+    <string name="add">إضافة</string>
+    <string name="save_to_supabase">حفظ في قاعدة البيانات</string>
     <string name="camera_permission_required">إذن الكاميرا مطلوب</string>
     <string name="grant_permission">منح الإذن</string>
 </resources>

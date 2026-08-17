@@ -17,11 +17,13 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneId
 
-enum class DashboardTimeRange(val label: String) {
-    DAY("Day"),
-    WEEK("Week"),
-    MONTH("Month"),
-    ALL("All Time")
+import com.devsoft.freshfood.R
+
+enum class DashboardTimeRange(val stringRes: Int) {
+    DAY(R.string.day),
+    WEEK(R.string.week),
+    MONTH(R.string.month),
+    ALL(R.string.all_time)
 }
 
 enum class DashboardDetailType {

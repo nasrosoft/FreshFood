@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.devsoft.freshfood.R
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -198,7 +200,7 @@ fun MainAppScreen(
                 if (!isDelivery) {
                     DrawerItem(
                         icon = Icons.Filled.Home,
-                        label = "Dashboard",
+                        label = stringResource(R.string.dashboard),
                         selected = currentRoute == "dashboard",
                         onClick = {
                             navController.navigate("dashboard") { launchSingleTop = true; restoreState = true }
@@ -207,7 +209,7 @@ fun MainAppScreen(
                     )
                     DrawerItem(
                         icon = Icons.Filled.ShoppingCart,
-                        label = "Sales (POS)",
+                        label = stringResource(R.string.sales_pos),
                         selected = currentRoute == "pos",
                         onClick = {
                             navController.navigate("pos") { launchSingleTop = true; restoreState = true }
@@ -216,7 +218,7 @@ fun MainAppScreen(
                     )
                     DrawerItem(
                         icon = Icons.Filled.List,
-                        label = "Products",
+                        label = stringResource(R.string.products),
                         selected = currentRoute == "products",
                         onClick = {
                             navController.navigate("products") { launchSingleTop = true; restoreState = true }
@@ -225,7 +227,7 @@ fun MainAppScreen(
                     )
                     DrawerItem(
                         icon = Icons.Filled.Person,
-                        label = "Customers",
+                        label = stringResource(R.string.customers),
                         selected = currentRoute == "customers",
                         onClick = {
                             navController.navigate("customers") { launchSingleTop = true; restoreState = true }
@@ -234,7 +236,7 @@ fun MainAppScreen(
                     )
                     DrawerItem(
                         icon = Icons.Filled.Add,
-                        label = "Purchase Entry",
+                        label = stringResource(R.string.purchase_entry),
                         selected = currentRoute == "purchases",
                         onClick = {
                             navController.navigate("purchases") { launchSingleTop = true; restoreState = true }
@@ -243,7 +245,7 @@ fun MainAppScreen(
                     )
                     DrawerItem(
                         icon = Icons.Filled.Person,
-                        label = "Users / Drivers",
+                        label = stringResource(R.string.users_drivers),
                         selected = currentRoute == "users",
                         onClick = {
                             navController.navigate("users") { launchSingleTop = true; restoreState = true }
@@ -254,7 +256,7 @@ fun MainAppScreen(
 
                 DrawerItem(
                     icon = Icons.Filled.ShoppingCart,
-                    label = "Deliveries",
+                    label = stringResource(R.string.deliveries),
                     selected = currentRoute == "deliveries",
                     onClick = {
                         navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
@@ -268,7 +270,7 @@ fun MainAppScreen(
                 // Paramétrage Button
                 DrawerItem(
                     icon = Icons.Filled.Build,
-                    label = "Paramétrage",
+                    label = stringResource(R.string.parametrage),
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -280,7 +282,7 @@ fun MainAppScreen(
 
                 DrawerItem(
                     icon = Icons.Filled.Settings,
-                    label = "Language / اللغة / Langue",
+                    label = stringResource(R.string.language),
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -290,7 +292,7 @@ fun MainAppScreen(
 
                 DrawerItem(
                     icon = Icons.Filled.ExitToApp,
-                    label = "Log out",
+                    label = stringResource(R.string.logout),
                     selected = false,
                     textColor = StatusError,
                     iconColor = StatusError,
@@ -478,14 +480,14 @@ fun MainAppScreen(
                         ) {
                             BottomNavButton(
                                 icon = Icons.Filled.Home,
-                                label = "Dashboard",
+                                label = stringResource(R.string.dashboard),
                                 selected = currentRoute == "dashboard",
                                 onClick = { navController.navigate("dashboard") { launchSingleTop = true; restoreState = true } },
                                 modifier = Modifier.weight(1f)
                             )
                             BottomNavButton(
                                 icon = Icons.Filled.List,
-                                label = "Products",
+                                label = stringResource(R.string.products),
                                 selected = currentRoute == "products",
                                 onClick = { navController.navigate("products") { launchSingleTop = true; restoreState = true } },
                                 modifier = Modifier.weight(1f)
@@ -507,7 +509,7 @@ fun MainAppScreen(
                                 ) {
                                     Icon(
                                         Icons.Filled.Add, 
-                                        contentDescription = "New Sale", 
+                                        contentDescription = stringResource(R.string.new_sale), 
                                         tint = Color.White, 
                                         modifier = Modifier.size(24.dp)
                                     )
@@ -516,14 +518,14 @@ fun MainAppScreen(
 
                             BottomNavButton(
                                 icon = Icons.Filled.ShoppingCart,
-                                label = "Sales",
+                                label = stringResource(R.string.sales),
                                 selected = currentRoute == "pos",
                                 onClick = { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
                                 modifier = Modifier.weight(1f)
                             )
                             BottomNavButton(
                                 icon = Icons.Filled.Menu,
-                                label = "Deliveries",
+                                label = stringResource(R.string.deliveries),
                                 selected = currentRoute == "deliveries",
                                 onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
                                 modifier = Modifier.weight(1f)

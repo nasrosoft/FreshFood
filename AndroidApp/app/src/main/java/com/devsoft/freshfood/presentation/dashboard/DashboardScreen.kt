@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.devsoft.freshfood.R
 import com.devsoft.freshfood.domain.model.Customer
 import com.devsoft.freshfood.domain.model.Product
 import com.devsoft.freshfood.domain.model.Sale
@@ -46,10 +48,6 @@ fun DashboardScreen(
     onNavigateToDeliveries: () -> Unit = {}
 ) {
     val uiState by dashboardViewModel.uiState.collectAsState()
-
-    LaunchedEffect(Unit) {
-        dashboardViewModel.loadDashboard()
-    }
 
     val todayDateFormatted = remember {
         try {
@@ -82,7 +80,7 @@ fun DashboardScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    "Good morning, Admin",
+                                    "${stringResource(R.string.good_morning)}, ${stringResource(R.string.admin)}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = TextDark
@@ -136,27 +134,27 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         MetricCard(
-                            title = "Today's Sales",
+                            title = stringResource(R.string.todays_sales),
                             value = "${String.format(Locale.US, "%,.0f", uiState.salesTotal)} DA",
-                            badgeText = "+12.5% vs yesterday",
+                            badgeText = stringResource(R.string.vs_yesterday),
                             badgeColor = StatusSuccess,
                             badgeContainer = StatusSuccessContainer,
                             onClick = { dashboardViewModel.showDetail(DashboardDetailType.SALES) }
                         )
 
                         MetricCard(
-                            title = "Profit (${uiState.timeRange.label})",
+                            title = "${stringResource(R.string.profit_day)} (${stringResource(uiState.timeRange.stringRes)})",
                             value = "${String.format(Locale.US, "%,.0f", uiState.profitTotal)} DA",
-                            badgeText = "20% Est. Margin",
+                            badgeText = stringResource(R.string.est_margin),
                             badgeColor = PrimaryBlue,
                             badgeContainer = PrimaryBlueContainer,
                             onClick = { dashboardViewModel.showDetail(DashboardDetailType.PROFIT) }
                         )
 
                         MetricCard(
-                            title = "Customer Credit",
+                            title = stringResource(R.string.customer_credit),
                             value = "${String.format(Locale.US, "%,.0f", uiState.totalCredit)} DA",
-                            badgeText = "Outstanding Debt",
+                            badgeText = stringResource(R.string.overview),
                             badgeColor = StatusWarning,
                             badgeContainer = StatusWarningContainer,
                             onClick = { dashboardViewModel.showDetail(DashboardDetailType.CREDIT) }
@@ -176,7 +174,7 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Stock Value", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                                Text(stringResource(R.string.stock_value), style = MaterialTheme.typography.bodyMedium, color = TextMuted)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "${String.format(Locale.US, "%,.0f", stockValue)} DA",
@@ -205,26 +203,26 @@ fun DashboardScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Alerts", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text(stringResource(R.string.alerts), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
                             Spacer(modifier = Modifier.height(12.dp))
                             
                             AlertRow(
                                 icon = "⚠️",
-                                text = "${uiState.lowStockProducts.size} products low in stock",
+                                text = stringResource(R.string.products_low_stock, uiState.lowStockProducts.size),
                                 color = StatusWarning,
                                 onClick = { dashboardViewModel.showDetail(DashboardDetailType.LOW_STOCK) }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             AlertRow(
                                 icon = "⏳",
-                                text = "Products expiring soon",
+                                text = stringResource(R.string.products_expiring_soon),
                                 color = StatusWarning,
                                 onClick = { dashboardViewModel.showDetail(DashboardDetailType.LOW_STOCK) }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             AlertRow(
                                 icon = "🔴",
-                                text = "Check batch expiration dates",
+                                text = stringResource(R.string.check_batch_expiration),
                                 color = StatusError,
                                 onClick = { dashboardViewModel.showDetail(DashboardDetailType.LOW_STOCK) }
                             )
@@ -245,7 +243,7 @@ fun DashboardScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Today's Deliveries", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                                Text(stringResource(R.string.todays_deliveries), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
                                 Text("🚚", fontSize = 24.sp)
                             }
                             Spacer(modifier = Modifier.height(12.dp))
@@ -253,9 +251,9 @@ fun DashboardScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceAround
                             ) {
-                                DeliveryCounterItem(count = "${uiState.totalDeliveriesToday}", label = "Total", color = PrimaryBlue)
-                                DeliveryCounterItem(count = "${uiState.completedDeliveriesToday}", label = "Completed", color = StatusSuccess)
-                                DeliveryCounterItem(count = "${uiState.pendingDeliveriesToday}", label = "Pending", color = StatusWarning)
+                                DeliveryCounterItem(count = "${uiState.totalDeliveriesToday}", label = stringResource(R.string.total), color = PrimaryBlue)
+                                DeliveryCounterItem(count = "${uiState.completedDeliveriesToday}", label = stringResource(R.string.completed), color = StatusSuccess)
+                                DeliveryCounterItem(count = "${uiState.pendingDeliveriesToday}", label = stringResource(R.string.pending), color = StatusWarning)
                             }
                         }
                     }
@@ -273,7 +271,7 @@ fun DashboardScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Sales Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                                Text(stringResource(R.string.sales_overview), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
                                 
                                 // Time Range Selector Filter
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -287,7 +285,7 @@ fun DashboardScreen(
                                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                                         ) {
                                             Text(
-                                                range.label,
+                                                stringResource(range.stringRes),
                                                 fontSize = 11.sp,
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                                 color = if (isSelected) Color.White else TextMuted
@@ -495,7 +493,7 @@ fun SalesDetailDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Sales Details (${timeRange.label})", fontWeight = FontWeight.Bold)
+                Text("${stringResource(R.string.sales_details)} (${stringResource(timeRange.stringRes)})", fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Filled.Close, contentDescription = "Close")
                 }
@@ -613,7 +611,7 @@ fun ProfitDetailDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Profit Details (${timeRange.label})", fontWeight = FontWeight.Bold)
+                Text("${stringResource(R.string.profit_details)} (${stringResource(timeRange.stringRes)})", fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Filled.Close, contentDescription = "Close")
                 }

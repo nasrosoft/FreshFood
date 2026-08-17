@@ -1,45 +1,86 @@
 <resources>
     <string name="app_name">FreshFood</string>
+    <string name="brand_default">Fresh Dairy</string>
+    <string name="brand_tagline_default">Gestion des Stocks et des Ventes</string>
+
+    <!-- Navigation -->
     <string name="dashboard">Tableau de bord</string>
-    <string name="business_dashboard">TABLEAU DE BORD COMMERCIAL</string>
-    <string name="overview">Aperçu</string>
-    <string name="sales_today">Ventes du jour</string>
-    <string name="profit_today">Bénéfice du jour</string>
-    <string name="customer_credit">Crédit Client</string>
-    <string name="low_stock">Stock Faible</string>
-    <string name="pos">Point de Vente</string>
-    <string name="deliveries">Livraisons</string>
+    <string name="sales_pos">Ventes (POS)</string>
+    <string name="sales">Ventes</string>
     <string name="products">Produits</string>
     <string name="customers">Clients</string>
     <string name="purchase_entry">Saisie des Achats</string>
     <string name="users_drivers">Utilisateurs / Livreurs</string>
+    <string name="deliveries">Livraisons</string>
+    <string name="parametrage">Paramétrage</string>
+    <string name="language">Langue / اللغة / Language</string>
     <string name="logout">Déconnexion</string>
+    <string name="admin_role">ADMINISTRATEUR</string>
+    <string name="delivery_role">LIVREUR</string>
+
+    <!-- Dashboard -->
+    <string name="good_morning">Bonjour</string>
+    <string name="admin">Admin</string>
+    <string name="todays_sales">Ventes du jour</string>
+    <string name="vs_yesterday">+12.5% vs hier</string>
+    <string name="profit_day">Bénéfice (Jour)</string>
+    <string name="est_margin">Marge est. 20%</string>
+    <string name="stock_value">Valeur du Stock</string>
+    <string name="alerts">Alertes</string>
+    <string name="products_low_stock">%d produits en stock faible</string>
+    <string name="products_expiring_soon">Produits expirant bientôt</string>
+    <string name="check_batch_expiration">Vérifier dates d\'expiration des lots</string>
+    <string name="todays_deliveries">Livraisons du jour</string>
+    <string name="total">Total</string>
+    <string name="completed">Terminées</string>
+    <string name="pending">En attente</string>
+    <string name="sales_overview">Aperçu des Ventes</string>
     <string name="day">Jour</string>
     <string name="week">Semaine</string>
     <string name="month">Mois</string>
     <string name="all_time">Tout</string>
-    <string name="pending">En attente</string>
-    <string name="out_for_delivery">En cours de livraison</string>
-    <string name="delivered">Livré</string>
-    <string name="today">Aujourd\'hui</string>
-    <string name="confirm_delivered">Confirmer la livraison</string>
-    <string name="driver">Livreur</string>
-    <string name="customer">Client</string>
-    <string name="barcode">Code-barres</string>
-    <string name="product_name">Nom du produit</string>
-    <string name="quantity">Quantité</string>
-    <string name="purchase_price">Prix d\'achat</string>
-    <string name="selling_price">Prix de vente</string>
-    <string name="margin">Pourcentage de marge (%)</string>
-    <string name="expiration_date">Date d\'expiration</string>
-    <string name="add_item">Ajouter un article</string>
-    <string name="validate_purchase">Valider l\'achat</string>
-    <string name="search">Rechercher</string>
-    <string name="cancel">Annuler</string>
-    <string name="add">Ajouter</string>
-    <string name="close">Fermer</string>
+    <string name="customer_credit">Crédit Client</string>
+    <string name="low_stock">Stock Faible</string>
+    <string name="overview">Aperçu</string>
+
+    <!-- Details Dialogs -->
+    <string name="sales_details">Détails des Ventes</string>
+    <string name="profit_details">Détails du Bénéfice</string>
+    <string name="credit_details">Détails du Crédit Client</string>
+    <string name="low_stock_details">Produits en Stock Faible</string>
+    <string name="no_sales_found">Aucune vente trouvée pour cette période.</string>
+    <string name="no_credit_found">Aucun solde de crédit client trouvé.</string>
+    <string name="all_in_stock">Tous les produits ont un stock suffisant !</string>
+    <string name="order">Commande</string>
+    <string name="time">Heure</string>
+    <string name="items">articles</string>
+
+    <!-- POS -->
+    <string name="new_sale">Nouvelle Vente</string>
+    <string name="quick_add">Ajout Rapide</string>
+    <string name="scan_or_search">Scanner code-barres ou rechercher...</string>
+    <string name="select_customer">Sélectionner Client</string>
+    <string name="delivery">Livraison</string>
+    <string name="assign_driver">Assigner Livreur</string>
+    <string name="stock_label">Stock: %d</string>
+    <string name="in_cart">%d dans le panier</string>
+    <string name="current_cart">Panier Actuel</string>
+    <string name="empty_cart">Votre panier est vide. Touchez un article pour l\'ajouter.</string>
+    <string name="payment_method">Mode de Paiement</string>
+    <string name="cash">Espèces</string>
+    <string name="bank">Banque / Carte</string>
+    <string name="credit">Crédit</string>
+    <string name="checkout">Encaisser</string>
+    <string name="invoice">Facture</string>
+    <string name="print_share_pdf">Imprimer / Partager PDF</string>
+
+    <!-- Generic Actions -->
     <string name="save">Enregistrer</string>
-    <string name="language">Langue</string>
+    <string name="cancel">Annuler</string>
+    <string name="close">Fermer</string>
+    <string name="search">Rechercher</string>
+    <string name="add">Ajouter</string>
+    <string name="save_to_supabase">Enregistrer sur Supabase</string>
     <string name="camera_permission_required">Autorisation caméra requise</string>
     <string name="grant_permission">Accorder l\'autorisation</string>
 </resources>
