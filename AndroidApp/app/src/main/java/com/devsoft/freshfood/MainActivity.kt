@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
         val profileRepo = ProfileRepositoryImpl(supabaseClient)
 
         // Factories
-        val activationFactory = ActivationViewModelFactory(activationRepo)
+        val activationFactory = ActivationViewModelFactory(activationRepo, applicationContext)
         val authFactory = AuthViewModelFactory(authRepo, profileRepo)
         val dashFactory = DashboardViewModelFactory(dashboardRepo)
         val prodFactory = ProductsViewModelFactory(productRepo)

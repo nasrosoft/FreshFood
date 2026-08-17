@@ -49,7 +49,7 @@ fun ActivationGate(
                         CircularProgressIndicator(color = PrimaryBlue)
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            "Verifying application status...",
+                            "Connecting to service...",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = TextMuted
@@ -58,17 +58,17 @@ fun ActivationGate(
                 }
             }
         }
+        is ActivationState.NoInternet -> {
+            NoInternetScreen(
+                isChecking = false,
+                errorMessage = state.message,
+                onRetry = { viewModel.checkActivation() }
+            )
+        }
         is ActivationState.Blocked -> {
             PaymentRequiredScreen(
                 isChecking = false,
                 errorMessage = null,
-                onRefresh = { viewModel.checkActivation() }
-            )
-        }
-        is ActivationState.Error -> {
-            PaymentRequiredScreen(
-                isChecking = false,
-                errorMessage = state.message,
                 onRefresh = { viewModel.checkActivation() }
             )
         }
