@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import androidx.core.content.FileProvider
+import com.devsoft.freshfood.domain.model.DeliveryOrderWithDetails
 import com.devsoft.freshfood.presentation.sales.CartItem
 import java.io.File
 import java.io.FileOutputStream
@@ -15,65 +16,113 @@ import java.util.Locale
 
 object PdfReceiptGenerator {
     
-    fun generateAndGetUri(context: Context, cartItems: List<CartItem>, totalAmount: Double): android.net.Uri? {
+    fun generateAndGetUri(
+        context: Context, 
+        cartItems: List<CartItem>, 
+        totalAmount: Double,
+        customerName: String? = null,
+        driverName: String? = null,
+        paymentMethod: String? = null
+    ): android.net.Uri? {
         val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(300, 600, 1).create()
+        val pageInfo = PdfDocument.PageInfo.Builder(300, 650, 1).create()
         val page = pdfDocument.startPage(pageInfo)
         val canvas: Canvas = page.canvas
         val paint = Paint()
         
         var yPosition = 30f
-        val xMargin = 10f
+        val xMargin = 14f
         
         // Header
         paint.textSize = 16f
         paint.isFakeBoldText = true
         paint.textAlign = Paint.Align.CENTER
-        canvas.drawText("FRESHFOOD", pageInfo.pageWidth / 2f, yPosition, paint)
+        canvas.drawText("FRESH DAIRY - FRESHFOOD", pageInfo.pageWidth / 2f, yPosition, paint)
         
-        yPosition += 20f
+        yPosition += 18f
         paint.textSize = 10f
         paint.isFakeBoldText = false
         val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
         canvas.drawText(dateFormat.format(Date()), pageInfo.pageWidth / 2f, yPosition, paint)
         
-        yPosition += 20f
+        yPosition += 18f
         paint.strokeWidth = 1f
         canvas.drawLine(xMargin, yPosition, pageInfo.pageWidth - xMargin, yPosition, paint)
         
-        // Items
-        yPosition += 20f
+        // Metadata (Customer, Payment Method, Driver)
         paint.textAlign = Paint.Align.LEFT
-        paint.textSize = 12f
+        paint.textSize = 10f
+
+        if (!customerName.isNullOrBlank()) {
+            yPosition += 16f
+            paint.isFakeBoldText = true
+            canvas.drawText("Customer:", xMargin, yPosition, paint)
+            paint.isFakeBoldText = false
+            canvas.drawText(" $customerName", xMargin + 56f, yPosition, paint)
+        }
+
+        if (!paymentMethod.isNullOrBlank()) {
+            yPosition += 14f
+            paint.isFakeBoldText = true
+            canvas.drawText("Payment:", xMargin, yPosition, paint)
+            paint.isFakeBoldText = false
+            canvas.drawText(" $paymentMethod", xMargin + 56f, yPosition, paint)
+        }
+
+        if (!driverName.isNullOrBlank()) {
+            yPosition += 14f
+            paint.isFakeBoldText = true
+            canvas.drawText("Driver:", xMargin, yPosition, paint)
+            paint.isFakeBoldText = false
+            canvas.drawText(" $driverName", xMargin + 56f, yPosition, paint)
+        }
+
+        yPosition += 12f
+        canvas.drawLine(xMargin, yPosition, pageInfo.pageWidth - xMargin, yPosition, paint)
+
+        // Items Header
+        yPosition += 16f
+        paint.textSize = 11f
+        paint.isFakeBoldText = true
+        canvas.drawText("Item", xMargin, yPosition, paint)
+        paint.textAlign = Paint.Align.RIGHT
+        canvas.drawText("Qty x Price", pageInfo.pageWidth - xMargin, yPosition, paint)
+        
+        yPosition += 6f
+        paint.isFakeBoldText = false
+        canvas.drawLine(xMargin, yPosition, pageInfo.pageWidth - xMargin, yPosition, paint)
+
+        // Items
+        paint.textSize = 11f
         for (item in cartItems) {
+            yPosition += 16f
+            paint.textAlign = Paint.Align.LEFT
             val itemName = if (item.product.name.length > 20) item.product.name.substring(0, 17) + "..." else item.product.name
             canvas.drawText(itemName, xMargin, yPosition, paint)
             
             val qtyPrice = "${item.quantity} x ${item.product.selling_price} DA"
             paint.textAlign = Paint.Align.RIGHT
             canvas.drawText(qtyPrice, pageInfo.pageWidth - xMargin, yPosition, paint)
-            
-            paint.textAlign = Paint.Align.LEFT
-            yPosition += 15f
         }
         
         // Total
-        yPosition += 10f
+        yPosition += 12f
         canvas.drawLine(xMargin, yPosition, pageInfo.pageWidth - xMargin, yPosition, paint)
         
         yPosition += 20f
         paint.textSize = 14f
         paint.isFakeBoldText = true
+        paint.textAlign = Paint.Align.LEFT
         canvas.drawText("TOTAL", xMargin, yPosition, paint)
         paint.textAlign = Paint.Align.RIGHT
         canvas.drawText("$totalAmount DA", pageInfo.pageWidth - xMargin, yPosition, paint)
         
         // Footer
-        yPosition += 40f
+        yPosition += 36f
         paint.textSize = 10f
         paint.isFakeBoldText = false
         paint.textAlign = Paint.Align.CENTER
-        canvas.drawText("Thank you for your purchase!", pageInfo.pageWidth / 2f, yPosition, paint)
+        canvas.drawText("Thank you for your business!", pageInfo.pageWidth / 2f, yPosition, paint)
         
         pdfDocument.finishPage(page)
         
@@ -92,53 +141,64 @@ object PdfReceiptGenerator {
         }
     }
 
-    fun generateDeliveryReceipt(context: Context, details: com.devsoft.freshfood.domain.model.DeliveryOrderWithDetails, paymentMethod: String): android.net.Uri? {
+    fun generateDeliveryReceipt(
+        context: Context, 
+        details: DeliveryOrderWithDetails, 
+        paymentMethod: String
+    ): android.net.Uri? {
         val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(300, 600, 1).create()
+        val pageInfo = PdfDocument.PageInfo.Builder(300, 650, 1).create()
         val page = pdfDocument.startPage(pageInfo)
         val canvas: Canvas = page.canvas
         val paint = Paint()
         
         var yPosition = 30f
-        val xMargin = 10f
+        val xMargin = 14f
         
         // Header
         paint.textSize = 16f
         paint.isFakeBoldText = true
         paint.textAlign = Paint.Align.CENTER
-        canvas.drawText("FRESHFOOD - DELIVERY", pageInfo.pageWidth / 2f, yPosition, paint)
+        canvas.drawText("FRESH DAIRY - DELIVERY", pageInfo.pageWidth / 2f, yPosition, paint)
         
-        yPosition += 20f
+        yPosition += 18f
         paint.textSize = 10f
         paint.isFakeBoldText = false
         val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
         canvas.drawText(dateFormat.format(Date()), pageInfo.pageWidth / 2f, yPosition, paint)
         
-        yPosition += 20f
-        paint.textAlign = Paint.Align.LEFT
-        canvas.drawText("Order ID: ${details.order.id.take(8)}", xMargin, yPosition, paint)
-        yPosition += 15f
-        canvas.drawText("Customer: ${details.customer?.name ?: "Unknown"}", xMargin, yPosition, paint)
-        val driverFullName = listOfNotNull(details.driver?.first_name, details.driver?.last_name)
-            .joinToString(" ")
-            .ifBlank { details.driver?.email ?: "N/A" }
-        yPosition += 15f
-        canvas.drawText("Driver: $driverFullName", xMargin, yPosition, paint)
-        yPosition += 15f
-        canvas.drawText("Payment: $paymentMethod", xMargin, yPosition, paint)
-        
-        yPosition += 10f
+        yPosition += 18f
         paint.strokeWidth = 1f
         canvas.drawLine(xMargin, yPosition, pageInfo.pageWidth - xMargin, yPosition, paint)
         
-        // Items
-        yPosition += 20f
+        // Delivery metadata
         paint.textAlign = Paint.Align.LEFT
-        paint.textSize = 12f
+        yPosition += 16f
+        canvas.drawText("Order ID: #${details.order.id.take(8).uppercase()}", xMargin, yPosition, paint)
+        
+        yPosition += 14f
+        canvas.drawText("Customer: ${details.customer?.name ?: "Unknown"}", xMargin, yPosition, paint)
+        
+        val driverFullName = listOfNotNull(details.driver?.first_name, details.driver?.last_name)
+            .joinToString(" ")
+            .ifBlank { details.driver?.email ?: "N/A" }
+        yPosition += 14f
+        canvas.drawText("Driver: $driverFullName", xMargin, yPosition, paint)
+        
+        yPosition += 14f
+        canvas.drawText("Payment Method: $paymentMethod", xMargin, yPosition, paint)
+        
+        yPosition += 12f
+        canvas.drawLine(xMargin, yPosition, pageInfo.pageWidth - xMargin, yPosition, paint)
+        
+        // Items
+        paint.textSize = 11f
         var totalAmount = 0.0
         for (itemDetail in details.items) {
+            yPosition += 16f
+            paint.textAlign = Paint.Align.LEFT
             val product = itemDetail.product
-            val itemName = product?.name ?: "Unknown"
+            val itemName = product?.name ?: "Product"
             val displayItemName = if (itemName.length > 20) itemName.substring(0, 17) + "..." else itemName
             canvas.drawText(displayItemName, xMargin, yPosition, paint)
             
@@ -148,28 +208,26 @@ object PdfReceiptGenerator {
             
             paint.textAlign = Paint.Align.RIGHT
             canvas.drawText(qtyPrice, pageInfo.pageWidth - xMargin, yPosition, paint)
-            
-            paint.textAlign = Paint.Align.LEFT
-            yPosition += 15f
         }
         
         // Total
-        yPosition += 10f
+        yPosition += 12f
         canvas.drawLine(xMargin, yPosition, pageInfo.pageWidth - xMargin, yPosition, paint)
         
         yPosition += 20f
         paint.textSize = 14f
         paint.isFakeBoldText = true
+        paint.textAlign = Paint.Align.LEFT
         canvas.drawText("TOTAL", xMargin, yPosition, paint)
         paint.textAlign = Paint.Align.RIGHT
         canvas.drawText("$totalAmount DA", pageInfo.pageWidth - xMargin, yPosition, paint)
         
         // Footer
-        yPosition += 40f
+        yPosition += 36f
         paint.textSize = 10f
         paint.isFakeBoldText = false
         paint.textAlign = Paint.Align.CENTER
-        canvas.drawText("Thank you for your purchase!", pageInfo.pageWidth / 2f, yPosition, paint)
+        canvas.drawText("Thank you for your business!", pageInfo.pageWidth / 2f, yPosition, paint)
         
         pdfDocument.finishPage(page)
         

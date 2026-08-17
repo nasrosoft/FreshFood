@@ -130,6 +130,10 @@ fun PosScreen(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text("Customer: ${selectedCustomer?.name ?: "Guest"}", fontWeight = FontWeight.SemiBold, color = TextDark)
                     Text("Payment Method: $selectedPaymentMethod", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    if (selectedDriver != null) {
+                        val driverName = listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email ?: "Driver" }
+                        Text("Driver: $driverName", style = MaterialTheme.typography.bodySmall, color = PrimaryBlue, fontWeight = FontWeight.Medium)
+                    }
                     
                     Spacer(modifier = Modifier.height(12.dp))
                     Divider(color = CardBorder)
@@ -169,7 +173,18 @@ fun PosScreen(
             },
             dismissButton = {
                 TextButton(onClick = {
-                    val uri = PdfReceiptGenerator.generateAndGetUri(context, items, total)
+                    val driverName = if (selectedDriver != null) {
+                        listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email }
+                    } else null
+
+                    val uri = PdfReceiptGenerator.generateAndGetUri(
+                        context = context,
+                        cartItems = items,
+                        totalAmount = total,
+                        customerName = selectedCustomer?.name ?: "Guest",
+                        driverName = driverName,
+                        paymentMethod = selectedPaymentMethod
+                    )
                     if (uri != null) {
                         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                             type = "application/pdf"
