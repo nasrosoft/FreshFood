@@ -3,6 +3,7 @@ package com.devsoft.freshfood.presentation.deliveries
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -102,10 +103,11 @@ fun DeliveryDashboardScreen(
                         com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                     }
 
-                    // Filter Tab Pills
+                    // Filter Tab Pills (Responsive Scrollable Row)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -116,13 +118,15 @@ fun DeliveryDashboardScreen(
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(if (isSelected) PrimaryBlue else CardSurfaceVariant)
                                     .clickable { selectedFilterIndex = index }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
                                 Text(
                                     title,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else TextMuted
+                                    color = if (isSelected) Color.White else TextMuted,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }

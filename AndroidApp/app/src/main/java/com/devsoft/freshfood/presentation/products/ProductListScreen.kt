@@ -2,6 +2,7 @@ package com.devsoft.freshfood.presentation.products
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -160,10 +161,11 @@ fun ProductListScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Filter Chips (All, Low Stock, Expiring, Expired)
+                    // Filter Chips (Responsive Horizontal Scroll)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -174,13 +176,15 @@ fun ProductListScreen(
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(if (isSelected) PrimaryBlue else CardSurfaceVariant)
                                     .clickable { selectedFilter = filter }
-                                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                                    .padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
                                 Text(
                                     filter.label,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else TextMuted
+                                    color = if (isSelected) Color.White else TextMuted,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
@@ -478,13 +482,14 @@ fun ProductGridCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Product Name
+            // Product Name (Responsive 2-line layout)
             Text(
                 text = product.name,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 17.sp),
                 fontWeight = FontWeight.Bold,
                 color = TextDark,
-                maxLines = 1,
+                maxLines = 2,
+                minLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center
             )

@@ -300,120 +300,105 @@ fun MainAppScreen(
 
         Scaffold(
             bottomBar = {
-                // Modern Bottom Navigation Bar matching reference UI
+                // Responsive Modern Bottom Navigation Bar
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shadowElevation = 8.dp,
                     color = CardSurface
                 ) {
                     if (isDelivery) {
-                        NavigationBar(
-                            containerColor = CardSurface,
-                            contentColor = TextDark,
-                            tonalElevation = 0.dp
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .height(60.dp)
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceAround,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            NavigationBarItem(
+                            BottomNavButton(
+                                icon = Icons.Filled.Home,
+                                label = "Home",
                                 selected = currentRoute == "deliveries",
                                 onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
-                                icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-                                label = { Text("Home") },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    indicatorColor = PrimaryBlueContainer
-                                )
+                                modifier = Modifier.weight(1f)
                             )
-                            NavigationBarItem(
+                            BottomNavButton(
+                                icon = Icons.Filled.ShoppingCart,
+                                label = "Deliveries",
                                 selected = currentRoute == "deliveries_list",
                                 onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
-                                icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = "Deliveries") },
-                                label = { Text("Deliveries") },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    indicatorColor = PrimaryBlueContainer
-                                )
+                                modifier = Modifier.weight(1f)
                             )
-                            NavigationBarItem(
+                            BottomNavButton(
+                                icon = Icons.Filled.Person,
+                                label = "Profile",
                                 selected = false,
                                 onClick = { scope.launch { drawerState.open() } },
-                                icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
-                                label = { Text("Profile") },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    indicatorColor = PrimaryBlueContainer
-                                )
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     } else {
-                        NavigationBar(
-                            containerColor = CardSurface,
-                            contentColor = TextDark,
-                            tonalElevation = 0.dp
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .height(62.dp)
+                                .padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceAround,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            NavigationBarItem(
+                            BottomNavButton(
+                                icon = Icons.Filled.Home,
+                                label = "Dashboard",
                                 selected = currentRoute == "dashboard",
                                 onClick = { navController.navigate("dashboard") { launchSingleTop = true; restoreState = true } },
-                                icon = { Icon(Icons.Filled.Home, contentDescription = "Dashboard") },
-                                label = { Text("Dashboard", fontSize = 11.sp) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    indicatorColor = PrimaryBlueContainer
-                                )
+                                modifier = Modifier.weight(1f)
                             )
-                            NavigationBarItem(
+                            BottomNavButton(
+                                icon = Icons.Filled.List,
+                                label = "Products",
                                 selected = currentRoute == "products",
                                 onClick = { navController.navigate("products") { launchSingleTop = true; restoreState = true } },
-                                icon = { Icon(Icons.Filled.List, contentDescription = "Products") },
-                                label = { Text("Products", fontSize = 11.sp) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    indicatorColor = PrimaryBlueContainer
-                                )
+                                modifier = Modifier.weight(1f)
                             )
                             
-                            // Center (+) Floating Action Button
-                            NavigationBarItem(
-                                selected = false,
-                                onClick = { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
-                                icon = {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .background(PrimaryBlue),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Filled.Add, contentDescription = "New Sale", tint = Color.White)
-                                    }
-                                },
-                                label = { Text("New Sale", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue) }
-                            )
+                            // Center (+) Elevated FAB
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(PrimaryBlue),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Add, 
+                                        contentDescription = "New Sale", 
+                                        tint = Color.White, 
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
 
-                            NavigationBarItem(
+                            BottomNavButton(
+                                icon = Icons.Filled.ShoppingCart,
+                                label = "Sales",
                                 selected = currentRoute == "pos",
                                 onClick = { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
-                                icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = "Sales") },
-                                label = { Text("Sales", fontSize = 11.sp) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    indicatorColor = PrimaryBlueContainer
-                                )
+                                modifier = Modifier.weight(1f)
                             )
-                            NavigationBarItem(
+                            BottomNavButton(
+                                icon = Icons.Filled.Menu,
+                                label = "Deliveries",
                                 selected = currentRoute == "deliveries",
                                 onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
-                                icon = { Icon(Icons.Filled.Menu, contentDescription = "More") },
-                                label = { Text("Deliveries", fontSize = 11.sp) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    indicatorColor = PrimaryBlueContainer
-                                )
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -544,3 +529,46 @@ private fun DrawerItem(
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
     )
 }
+
+@Composable
+private fun BottomNavButton(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (selected) PrimaryBlueContainer else Color.Transparent)
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = if (selected) PrimaryBlue else TextMuted,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) PrimaryBlue else TextMuted,
+            maxLines = 1,
+            softWrap = false
+        )
+    }
+}
+
