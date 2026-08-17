@@ -102,6 +102,10 @@ BEGIN
     IF (sale_data->>'credit_amount')::DECIMAL > 0 AND v_customer_id IS NOT NULL THEN
         INSERT INTO credit_transactions (customer_id, amount, transaction_type, reference_id, user_id)
         VALUES (v_customer_id, (sale_data->>'credit_amount')::DECIMAL, 'DEBT', v_sale_id, v_user_id);
+
+        UPDATE customers 
+        SET current_credit = current_credit + (sale_data->>'credit_amount')::DECIMAL 
+        WHERE id = v_customer_id;
     END IF;
 
     IF (sale_data->>'paid_amount')::DECIMAL > 0 AND v_customer_id IS NOT NULL THEN

@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.map
@@ -91,6 +90,7 @@ class PosViewModel(
             }
         }
     }
+
     fun setQuantity(product: Product, quantity: Int) {
         if (quantity <= 0) {
             removeItem(product)
@@ -128,14 +128,18 @@ class PosViewModel(
     private fun calculateTotal(items: List<CartItem>): Double {
         return items.sumOf { it.product.selling_price * it.quantity }
     }
+
     fun checkout(paymentMethod: String, customerId: String? = null, createDelivery: Boolean = false, deliveryDriverId: String? = null) {
         val currentState = _cartState.value
         if (currentState.cartItems.isEmpty()) return
         
+        val totalSaleAmount = currentState.totalAmount
+        val currentSaleItems = currentState.cartItems.toList()
+        
         _cartState.update { it.copy(isLoading = true, checkoutMessage = null) }
 
         viewModelScope.launch {
-            val itemsReq = currentState.cartItems.map {
+            val itemsReq = currentSaleItems.map {
                 SaleItemRequest(
                     id = java.util.UUID.randomUUID().toString(),
                     product_id = it.product.id,
@@ -144,13 +148,17 @@ class PosViewModel(
                 )
             }
             
+            val isCredit = paymentMethod.equals("CREDIT", ignoreCase = true)
+            val paidAmount = if (isCredit) 0.0 else totalSaleAmount
+            val creditAmount = if (isCredit) totalSaleAmount else 0.0
+
             val saleReq = SaleRequest(
                 id = java.util.UUID.randomUUID().toString(),
                 customer_id = customerId,
-                user_id = null, // Authentication not yet implemented
-                total_amount = currentState.totalAmount,
-                paid_amount = currentState.totalAmount, // Assuming full payment in CASH/CARD
-                credit_amount = 0.0,
+                user_id = null,
+                total_amount = totalSaleAmount,
+                paid_amount = paidAmount,
+                credit_amount = creditAmount,
                 payment_method = paymentMethod,
                 items = itemsReq,
                 create_delivery = createDelivery,
@@ -163,8 +171,8 @@ class PosViewModel(
                 if (result.isSuccess) {
                     state.copy(
                         isLoading = false,
-                        lastSaleItems = state.cartItems,
-                        lastSaleTotal = state.totalAmount,
+                        lastSaleItems = currentSaleItems,
+                        lastSaleTotal = totalSaleAmount,
                         cartItems = emptyList(),
                         totalAmount = 0.0,
                         checkoutMessage = "Success! Invoice: ${result.getOrNull()}"

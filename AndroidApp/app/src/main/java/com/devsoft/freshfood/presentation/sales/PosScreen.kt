@@ -314,7 +314,9 @@ fun PosScreen(
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = CardSurface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        modifier = Modifier.width(136.dp)
+                        modifier = Modifier
+                            .width(136.dp)
+                            .clickable { viewModel.addToCart(product) }
                     ) {
                         Column(
                             modifier = Modifier.padding(10.dp).fillMaxWidth(),
@@ -381,8 +383,7 @@ fun PosScreen(
                                     modifier = Modifier
                                         .size(28.dp)
                                         .clip(CircleShape)
-                                        .background(PrimaryBlue)
-                                        .clickable { viewModel.addToCart(product) },
+                                        .background(PrimaryBlue),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(16.dp))
