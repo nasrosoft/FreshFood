@@ -1,11 +1,12 @@
--- 1. Add sale_id to delivery_orders
-ALTER TABLE delivery_orders ADD COLUMN IF NOT EXISTS sale_id UUID REFERENCES sales(id) ON DELETE SET NULL;
+-- =========================================================
+-- FIX: Delivery Item Modification & Sale Items Constraint
+-- =========================================================
 
--- 2. Relax the sale_items check constraint to allow quantity >= 0
+-- 1. Relax the sale_items check constraint to allow quantity >= 0
 ALTER TABLE sale_items DROP CONSTRAINT IF EXISTS sale_items_quantity_check;
 ALTER TABLE sale_items ADD CONSTRAINT sale_items_quantity_check CHECK (quantity >= 0);
 
--- 3. Create the function to restock and adjust financials when a delivery item is modified by a driver
+-- 2. Update handle_delivery_item_modification function
 CREATE OR REPLACE FUNCTION handle_delivery_item_modification()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -29,7 +30,7 @@ BEGIN
         RETURN COALESCE(NEW, OLD);
     END IF;
 
-    -- Get the delivery order to find sale_id and customer_id
+    -- Get the delivery order to find sale_id, customer_id, and delivery employee
     SELECT sale_id, customer_id, delivery_employee_id INTO v_sale_id, v_customer_id, v_user_id
     FROM delivery_orders WHERE id = OLD.delivery_order_id;
 
@@ -42,7 +43,7 @@ BEGIN
     IF v_sale_id IS NOT NULL THEN
         v_remaining_diff := v_diff;
 
-        -- Loop through sale_items for this product to deduct quantities safely
+        -- Loop through sale_items for this product to deduct quantities without going negative on any single row
         FOR v_sale_item IN 
             SELECT * FROM sale_items 
             WHERE sale_id = v_sale_id AND product_id = OLD.product_id AND quantity > 0
@@ -57,7 +58,7 @@ BEGIN
             v_item_refund := v_take_qty * v_unit_price;
             v_refund_amount := v_refund_amount + v_item_refund;
 
-            -- Update sale_items
+            -- Update the sale_item quantity & subtotal
             UPDATE sale_items 
             SET quantity = quantity - v_take_qty, 
                 subtotal = subtotal - v_item_refund
@@ -66,13 +67,13 @@ BEGIN
             v_remaining_diff := v_remaining_diff - v_take_qty;
         END LOOP;
 
-        -- UPDATE sales table
+        -- Update sales total amount
         IF v_refund_amount > 0 THEN
             UPDATE sales 
             SET total_amount = total_amount - v_refund_amount
             WHERE id = v_sale_id;
             
-            -- Insert a PAYMENT credit transaction to reduce customer's debt for the returned items
+            -- Insert a PAYMENT credit transaction to reduce customer's debt for returned items
             IF v_customer_id IS NOT NULL THEN
                 INSERT INTO credit_transactions (customer_id, amount, transaction_type, reference_id, user_id)
                 VALUES (v_customer_id, v_refund_amount, 'PAYMENT', v_sale_id, v_user_id);
@@ -84,7 +85,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. Create the trigger (drop if exists first to avoid duplicates)
+-- 3. Re-create the trigger
 DROP TRIGGER IF EXISTS trigger_delivery_item_modified ON delivery_items;
 CREATE TRIGGER trigger_delivery_item_modified
 AFTER UPDATE OR DELETE ON delivery_items

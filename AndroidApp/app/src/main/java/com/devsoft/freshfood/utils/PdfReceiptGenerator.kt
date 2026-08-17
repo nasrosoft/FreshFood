@@ -119,6 +119,11 @@ object PdfReceiptGenerator {
         canvas.drawText("Order ID: ${details.order.id.take(8)}", xMargin, yPosition, paint)
         yPosition += 15f
         canvas.drawText("Customer: ${details.customer?.name ?: "Unknown"}", xMargin, yPosition, paint)
+        val driverFullName = listOfNotNull(details.driver?.first_name, details.driver?.last_name)
+            .joinToString(" ")
+            .ifBlank { details.driver?.email ?: "N/A" }
+        yPosition += 15f
+        canvas.drawText("Driver: $driverFullName", xMargin, yPosition, paint)
         yPosition += 15f
         canvas.drawText("Payment: $paymentMethod", xMargin, yPosition, paint)
         

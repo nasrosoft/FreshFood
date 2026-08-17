@@ -75,4 +75,7 @@ dependencies {
     
     // MLKit Barcode
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    
+    // Coil Image Loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
 }

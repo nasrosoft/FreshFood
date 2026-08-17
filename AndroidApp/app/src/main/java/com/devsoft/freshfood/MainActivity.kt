@@ -10,6 +10,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.devsoft.freshfood.presentation.activation.ActivationGate
+import com.devsoft.freshfood.presentation.activation.ActivationViewModel
+import com.devsoft.freshfood.presentation.activation.ActivationViewModelFactory
 import com.devsoft.freshfood.presentation.auth.*
 import com.devsoft.freshfood.presentation.navigation.MainAppScreen
 import com.devsoft.freshfood.presentation.dashboard.DashboardViewModelFactory
@@ -26,6 +29,13 @@ import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlinx.serialization.json.Json
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val lang = com.devsoft.freshfood.utils.LocaleHelper.getPersistedLanguage(newBase)
+        val context = com.devsoft.freshfood.utils.LocaleHelper.updateResources(newBase, lang)
+        super.attachBaseContext(context)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -42,6 +52,7 @@ class MainActivity : ComponentActivity() {
             })
         }
 
+        val activationRepo = ActivationRepositoryImpl(supabaseClient)
         val authRepo = AuthRepositoryImpl(supabaseClient)
         val productRepo = ProductRepositoryImpl(supabaseClient)
         val salesRepo = SalesRepositoryImpl(supabaseClient)
@@ -53,6 +64,7 @@ class MainActivity : ComponentActivity() {
         val profileRepo = ProfileRepositoryImpl(supabaseClient)
 
         // Factories
+        val activationFactory = ActivationViewModelFactory(activationRepo)
         val authFactory = AuthViewModelFactory(authRepo, profileRepo)
         val dashFactory = DashboardViewModelFactory(dashboardRepo)
         val prodFactory = ProductsViewModelFactory(productRepo)
@@ -66,31 +78,36 @@ class MainActivity : ComponentActivity() {
         setContent {
             FreshFoodTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    val authViewModel: AuthViewModel = viewModel(factory = authFactory)
-                    val authState by authViewModel.authState.collectAsState()
+                    val activationViewModel: ActivationViewModel = viewModel(factory = activationFactory)
 
-                    if (authState is AuthState.Authenticated) {
-                        val userRole = (authState as AuthState.Authenticated).role
-                        val userId = (authState as AuthState.Authenticated).userId
-                        MainAppScreen(
-                            userId = userId,
-                            userRole = userRole,
-                            dashboardViewModel = viewModel(factory = dashFactory),
-                            productsViewModel = viewModel(factory = prodFactory),
-                            posViewModel = viewModel(factory = posFactory),
-                            customersViewModel = viewModel(factory = custFactory),
-                            purchaseViewModel = viewModel(factory = purchaseFactory),
-                            deliveryViewModel = viewModel(factory = deliveryFactory),
-                            inventoryViewModel = viewModel(factory = inventoryFactory),
-                            returnsViewModel = viewModel(factory = returnsFactory),
-                            profileRepository = profileRepo,
-                            onLogout = { authViewModel.logout() }
-                        )
-                    } else {
-                        LoginScreen(
-                            viewModel = authViewModel,
-                            onLoginSuccess = {}
-                        )
+                    // Gate the entire application behind the real-time Supabase activation check
+                    ActivationGate(viewModel = activationViewModel) {
+                        val authViewModel: AuthViewModel = viewModel(factory = authFactory)
+                        val authState by authViewModel.authState.collectAsState()
+
+                        if (authState is AuthState.Authenticated) {
+                            val userRole = (authState as AuthState.Authenticated).role
+                            val userId = (authState as AuthState.Authenticated).userId
+                            MainAppScreen(
+                                userId = userId,
+                                userRole = userRole,
+                                dashboardViewModel = viewModel(factory = dashFactory),
+                                productsViewModel = viewModel(factory = prodFactory),
+                                posViewModel = viewModel(factory = posFactory),
+                                customersViewModel = viewModel(factory = custFactory),
+                                purchaseViewModel = viewModel(factory = purchaseFactory),
+                                deliveryViewModel = viewModel(factory = deliveryFactory),
+                                inventoryViewModel = viewModel(factory = inventoryFactory),
+                                returnsViewModel = viewModel(factory = returnsFactory),
+                                profileRepository = profileRepo,
+                                onLogout = { authViewModel.logout() }
+                            )
+                        } else {
+                            LoginScreen(
+                                viewModel = authViewModel,
+                                onLoginSuccess = {}
+                            )
+                        }
                     }
                 }
             }

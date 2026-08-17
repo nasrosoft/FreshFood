@@ -11,13 +11,32 @@ class DashboardRepositoryImpl(
     private val supabase: SupabaseClient
 ) : DashboardRepository {
 
-    override suspend fun getTodaySalesTotal(): Double {
+    override suspend fun getSales(): List<Sale> {
         return try {
-            val sales = supabase.postgrest["sales"].select().decodeList<Sale>()
-            sales.sumOf { it.total_amount }
+            supabase.postgrest["sales"].select().decodeList<Sale>()
         } catch (e: Exception) {
-            0.0
+            emptyList()
         }
+    }
+
+    override suspend fun getCustomers(): List<Customer> {
+        return try {
+            supabase.postgrest["customers"].select().decodeList<Customer>()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    override suspend fun getProducts(): List<Product> {
+        return try {
+            supabase.postgrest["products"].select().decodeList<Product>()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    override suspend fun getTodaySalesTotal(): Double {
+        return getSales().sumOf { it.total_amount }
     }
 
     override suspend fun getTodayProfitTotal(): Double {
@@ -25,20 +44,10 @@ class DashboardRepositoryImpl(
     }
 
     override suspend fun getTotalCustomerCredit(): Double {
-        return try {
-            val customers = supabase.postgrest["customers"].select().decodeList<Customer>()
-            customers.sumOf { it.current_credit }
-        } catch (e: Exception) {
-            0.0
-        }
+        return getCustomers().sumOf { it.current_credit }
     }
 
     override suspend fun getLowStockCount(): Int {
-        return try {
-            val products = supabase.postgrest["products"].select().decodeList<Product>()
-            products.count { it.current_stock <= it.min_stock }
-        } catch (e: Exception) {
-            0
-        }
+        return getProducts().count { it.current_stock <= it.min_stock }
     }
 }

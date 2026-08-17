@@ -1,22 +1,35 @@
 package com.devsoft.freshfood.presentation.deliveries
 
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.devsoft.freshfood.domain.model.DeliveryOrderWithDetails
+import com.devsoft.freshfood.ui.theme.*
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,12 +41,14 @@ fun DeliveryDashboardScreen(
     onOpenDrawer: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedFilterIndex by remember { mutableStateOf(0) }
+    var selectedDeliveryDate by remember { mutableStateOf(LocalDate.now()) }
     var orderToDelete by remember { mutableStateOf<String?>(null) }
-    val tabs = listOf("Pending", "Out for Delivery", "Delivered")
-
+    val filterTabs = listOf("All", "Pending", "Out for Delivery", "Delivered")
     val context = LocalContext.current
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    val isDriver = currentUserRole == "DELIVERY"
+
+    LaunchedEffect(Unit) {
         viewModel.loadDeliveries()
     }
 
@@ -43,78 +58,273 @@ fun DeliveryDashboardScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Deliveries", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-IconButton(onClick = onOpenDrawer) {
-                        Icon(Icons.Filled.Menu, contentDescription = "Menu")
-                    }
-                },
-                actions = {
-                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            TabRow(selectedTabIndex = selectedTabIndex) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = { Text(title) }
-                    )
+    fun parseDeliveryDate(timestamp: String?): LocalDate? {
+        if (timestamp.isNullOrBlank()) return null
+        return try {
+            OffsetDateTime.parse(timestamp).atZoneSameInstant(ZoneId.systemDefault()).toLocalDate()
+        } catch (e: Exception) {
+            try {
+                Instant.parse(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+            } catch (e2: Exception) {
+                try {
+                    LocalDate.parse(timestamp.take(10))
+                } catch (e3: Exception) {
+                    null
                 }
             }
+        }
+    }
 
-            when (val state = uiState) {
-                is DeliveryUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+    Scaffold(
+        topBar = {
+            Surface(color = CardSurface, shadowElevation = 1.dp) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onOpenDrawer) {
+                                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = PrimaryBlueDark)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                if (isDriver) "Driver Home" else "Deliveries",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
+                            )
+                        }
+
+                        com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                     }
+
+                    // Filter Tab Pills
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        filterTabs.forEachIndexed { index, title ->
+                            val isSelected = selectedFilterIndex == index
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (isSelected) PrimaryBlue else CardSurfaceVariant)
+                                    .clickable { selectedFilterIndex = index }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    title,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else TextMuted
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        containerColor = AppBackground
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            when (uiState) {
+                is DeliveryUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
                 }
                 is DeliveryUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            text = (uiState as DeliveryUiState.Error).message,
+                            color = StatusError
+                        )
                     }
                 }
                 is DeliveryUiState.Success -> {
-                    val filterStatus = when (selectedTabIndex) {
-                        0 -> listOf("PENDING", "ASSIGNED")
-                        1 -> listOf("OUT_FOR_DELIVERY")
-                        2 -> listOf("DELIVERED", "PARTIALLY_DELIVERED")
-                        else -> emptyList()
-                    }
-                    val baseOrders = if (currentUserRole == "DELIVERY" && currentUserId != null) {
-                        state.deliveries.filter { it.order.delivery_employee_id == currentUserId }
+                    val allDeliveries = (uiState as DeliveryUiState.Success).deliveries
+                    val roleDeliveries = if (isDriver) {
+                        allDeliveries.filter { it.order.delivery_employee_id == currentUserId || it.order.delivery_employee_id == "00000000-0000-0000-0000-000000000000" }
                     } else {
-                        state.deliveries
+                        allDeliveries
                     }
-                    val filteredOrders = baseOrders.filter { it.order.status in filterStatus }
 
-                    if (filteredOrders.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No deliveries found for this status.")
+                    val filteredDeliveries = when (selectedFilterIndex) {
+                        1 -> roleDeliveries.filter { it.order.status == "PENDING" || it.order.status == "ASSIGNED" }
+                        2 -> roleDeliveries.filter { it.order.status == "OUT_FOR_DELIVERY" }
+                        3 -> roleDeliveries.filter { 
+                            it.order.status == "DELIVERED" && 
+                            (parseDeliveryDate(it.order.updated_at ?: it.order.created_at) == selectedDeliveryDate) 
                         }
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(filteredOrders) { details ->
-                                DeliveryOrderCard(
-                                    details = details,
-                                    onClick = { onDeliveryClick(details.order.id) },
-                                    canDelete = currentUserRole == "ADMIN" && details.order.status in listOf("PENDING", "ASSIGNED", "OUT_FOR_DELIVERY"),
-                                    onDeleteClick = { orderToDelete = details.order.id }
+                        else -> roleDeliveries
+                    }
+
+                    val totalCount = roleDeliveries.size
+                    val completedCount = roleDeliveries.count { it.order.status == "DELIVERED" }
+                    val pendingCount = roleDeliveries.count { it.order.status != "DELIVERED" }
+                    val nextDelivery = roleDeliveries.firstOrNull { it.order.status == "OUT_FOR_DELIVERY" || it.order.status == "ASSIGNED" || it.order.status == "PENDING" }
+                    val totalCollected = roleDeliveries.filter { it.order.status == "DELIVERED" }.sumOf { 
+                        it.items.sumOf { itemDetail -> (itemDetail.product?.selling_price ?: 0.0) * itemDetail.item.quantity } 
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Driver Mode Summary Cards (matching reference design)
+                        if (isDriver) {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = PrimaryBlue)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("Good morning, Driver 👋", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                            Text("🚚", fontSize = 22.sp)
+                                        }
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceAround
+                                        ) {
+                                            DriverStatItem(count = "$totalCount", label = "Total", color = Color.White)
+                                            DriverStatItem(count = "$completedCount", label = "Completed", color = StatusSuccessContainer)
+                                            DriverStatItem(count = "$pendingCount", label = "Pending", color = StatusWarningContainer)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Next Delivery Highlight Card
+                            if (nextDelivery != null) {
+                                val nextAmount = nextDelivery.items.sumOf { (it.product?.selling_price ?: 0.0) * it.item.quantity }
+                                item {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(containerColor = CardSurface),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text("Next Delivery", fontWeight = FontWeight.Bold, color = TextDark)
+                                                StatusBadge(status = nextDelivery.order.status)
+                                            }
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(nextDelivery.customer?.name ?: "Customer", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                            nextDelivery.customer?.address?.let {
+                                                Text(it, style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                                            }
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    "${String.format(java.util.Locale.US, "%,.0f", nextAmount)} DA",
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryBlue,
+                                                    fontSize = 16.sp
+                                                )
+                                                Button(
+                                                    onClick = { onDeliveryClick(nextDelivery.order.id) },
+                                                    shape = RoundedCornerShape(10.dp)
+                                                ) {
+                                                    Text("View Delivery")
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Today's Collection Card
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(containerColor = StatusSuccessContainer)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text("Today's Collection", style = MaterialTheme.typography.bodySmall, color = Color(0xFF065F46))
+                                            Text(
+                                                "${String.format(java.util.Locale.US, "%,.0f", totalCollected)} DA",
+                                                style = MaterialTheme.typography.titleLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF047857)
+                                            )
+                                        }
+                                        Text("💰", fontSize = 28.sp)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Date Navigator if Delivered tab is selected
+                        if (selectedFilterIndex == 3) {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = CardSurface)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(onClick = { selectedDeliveryDate = selectedDeliveryDate.minusDays(1) }) {
+                                            Icon(Icons.Filled.ArrowBack, contentDescription = "Previous Day")
+                                        }
+                                        Text(
+                                            selectedDeliveryDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy")),
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        IconButton(onClick = { selectedDeliveryDate = selectedDeliveryDate.plusDays(1) }) {
+                                            Icon(Icons.Filled.ArrowForward, contentDescription = "Next Day")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (filteredDeliveries.isEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("🚚", fontSize = 48.sp)
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Text("No deliveries found", fontWeight = FontWeight.Bold, color = TextDark)
+                                    }
+                                }
+                            }
+                        } else {
+                            items(filteredDeliveries) { delivery ->
+                                DeliveryCardModern(
+                                    delivery = delivery,
+                                    onClick = { onDeliveryClick(delivery.order.id) },
+                                    onDelete = { orderToDelete = delivery.order.id }
                                 )
                             }
                         }
@@ -127,85 +337,116 @@ IconButton(onClick = onOpenDrawer) {
     if (orderToDelete != null) {
         AlertDialog(
             onDismissRequest = { orderToDelete = null },
-            title = { Text("Delete Delivery") },
-            text = { Text("Are you sure you want to delete this delivery? This action cannot be undone.") },
+            title = { Text("Delete Delivery Order") },
+            text = { Text("Are you sure you want to permanently delete this delivery order?") },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
-                        orderToDelete?.let { viewModel.deleteDeliveryOrder(it) }
+                        viewModel.deleteDeliveryOrder(orderToDelete!!)
                         orderToDelete = null
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusError)
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { orderToDelete = null }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { orderToDelete = null }) { Text("Cancel") }
             }
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeliveryOrderCard(
-    details: DeliveryOrderWithDetails,
+fun DeliveryCardModern(
+    delivery: DeliveryOrderWithDetails,
     onClick: () -> Unit,
-    canDelete: Boolean = false,
-    onDeleteClick: () -> Unit = {}
+    onDelete: () -> Unit
 ) {
+    val totalAmount = delivery.items.sumOf { (it.product?.selling_price ?: 0.0) * it.item.quantity }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = "Order ID: ${details.order.id.take(8)}...", 
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                if (canDelete) {
-                    IconButton(onClick = onDeleteClick) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Delete Order", tint = MaterialTheme.colorScheme.error)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Customer: ${details.customer?.name ?: "Unknown"}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${details.items.size} Items",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "#DEL-${delivery.order.id.take(5).uppercase()}",
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryBlue,
+                    fontSize = 13.sp
                 )
-                Badge(
-                    containerColor = when(details.order.status) {
-                        "PENDING" -> MaterialTheme.colorScheme.error
-                        "OUT_FOR_DELIVERY" -> MaterialTheme.colorScheme.tertiary
-                        "DELIVERED" -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.secondary
-                    }
-                ) {
-                    Text(details.order.status, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                }
+                StatusBadge(status = delivery.order.status)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(delivery.customer?.name ?: "Customer", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextDark)
+            
+            delivery.driver?.let { driver ->
+                Text(
+                    "Driver: ${listOfNotNull(driver.first_name, driver.last_name).joinToString(" ").ifBlank { driver.email }}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Divider(color = CardBorder)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "${delivery.items.size} Products",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted
+                )
+                Text(
+                    "${String.format(java.util.Locale.US, "%,.0f", totalAmount)} DA",
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark,
+                    fontSize = 15.sp
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun DriverStatItem(count: String, label: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(count, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
+        Text(label, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f))
+    }
+}
+
+@Composable
+private fun StatusBadge(status: String) {
+    val (bgColor, textColor, label) = when (status) {
+        "DELIVERED" -> Triple(StatusSuccessContainer, StatusSuccess, "Delivered")
+        "OUT_FOR_DELIVERY" -> Triple(StatusWarningContainer, StatusWarning, "Out for Delivery")
+        "ASSIGNED" -> Triple(PrimaryBlueContainer, PrimaryBlue, "Assigned")
+        else -> Triple(CardSurfaceVariant, TextMuted, status)
+    }
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(bgColor)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = textColor)
     }
 }

@@ -2,30 +2,34 @@ package com.devsoft.freshfood.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Vibrant Greens for Fresh Food
-val PrimaryGreen = Color(0xFF10B981) // Emerald 500
-val PrimaryGreenLight = Color(0xFF34D399) // Emerald 400
-val PrimaryGreenDark = Color(0xFF047857) // Emerald 700
+// Modern Brand Royal Blue / Indigo (from reference UI)
+val PrimaryBlue = Color(0xFF2563EB) // Blue 600
+val PrimaryBlueLight = Color(0xFF3B82F6) // Blue 500
+val PrimaryBlueDark = Color(0xFF1D4ED8) // Blue 700
+val PrimaryBlueContainer = Color(0xFFEFF6FF) // Blue 50
+val OnPrimaryBlueContainer = Color(0xFF1E40AF)
 
-// Secondary Accents
-val SecondaryBlue = Color(0xFF3B82F6) // Blue 500
-val SecondaryBlueLight = Color(0xFF60A5FA) // Blue 400
-val SecondaryBlueDark = Color(0xFF1D4ED8) // Blue 700
+// Secondary & Accent Colors
+val AccentSky = Color(0xFF0EA5E9) // Sky 500
+val AccentIndigo = Color(0xFF4F46E5) // Indigo 600
 
-// Backgrounds and Surfaces
-val BackgroundLight = Color(0xFFF8FAFC) // Slate 50
-val SurfaceLight = Color(0xFFFFFFFF)
-val BackgroundDark = Color(0xFF0F172A) // Slate 900
-val SurfaceDark = Color(0xFF1E293B) // Slate 800
+// Backgrounds & Surface Cards
+val AppBackground = Color(0xFFF8FAFC) // Slate 50 / Crisp Canvas
+val CardSurface = Color(0xFFFFFFFF) // Pure White Card
+val CardBorder = Color(0xFFE2E8F0) // Slate 200
+val CardSurfaceVariant = Color(0xFFF1F5F9) // Slate 100
 
-// Status Colors
-val ErrorRed = Color(0xFFEF4444) // Red 500
-val SuccessGreen = Color(0xFF10B981) // Emerald 500
-val WarningOrange = Color(0xFFF59E0B) // Amber 500
-val ExpiredRed = Color(0xFFDC2626) // Red 600
+// Semantic Status Colors
+val StatusSuccess = Color(0xFF10B981) // Emerald 500
+val StatusSuccessContainer = Color(0xFFECFDF5) // Emerald 50
+val StatusWarning = Color(0xFFF59E0B) // Amber 500
+val StatusWarningContainer = Color(0xFFFEF3C7) // Amber 50
+val StatusError = Color(0xFFEF4444) // Red 500
+val StatusErrorContainer = Color(0xFFFEE2E2) // Red 50
+val StatusInfo = Color(0xFF3B82F6) // Blue 500
+val StatusInfoContainer = Color(0xFFEFF6FF)
 
-// Typography Colors
-val TextPrimaryLight = Color(0xFF0F172A) // Slate 900
-val TextSecondaryLight = Color(0xFF64748B) // Slate 500
-val TextPrimaryDark = Color(0xFFF8FAFC) // Slate 50
-val TextSecondaryDark = Color(0xFF94A3B8) // Slate 400
+// Text & Content Colors
+val TextDark = Color(0xFF0F172A) // Slate 900
+val TextMuted = Color(0xFF64748B) // Slate 500
+val TextSubtle = Color(0xFF94A3B8) // Slate 400

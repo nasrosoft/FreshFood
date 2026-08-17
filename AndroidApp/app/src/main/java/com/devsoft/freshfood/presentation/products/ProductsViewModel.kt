@@ -67,6 +67,22 @@ class ProductsViewModel(
         return _uiState.value.products.find { it.barcode == barcode }
     }
 
+    suspend fun searchProductByBarcode(barcode: String): Product? {
+        val trimmed = barcode.trim()
+        if (trimmed.isBlank()) return null
+        val local = _uiState.value.products.find { it.barcode.equals(trimmed, ignoreCase = true) }
+        if (local != null) return local
+        return try {
+            val remote = repository.getProductByBarcode(trimmed)
+            if (remote != null) {
+                loadProducts()
+            }
+            remote
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun addStock(product: Product, quantityToAdd: Int, expirationDate: String) {
         viewModelScope.launch {
             // Update product's total current_stock

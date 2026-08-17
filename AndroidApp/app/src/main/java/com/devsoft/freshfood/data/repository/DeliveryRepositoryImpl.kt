@@ -16,14 +16,20 @@ class DeliveryRepositoryImpl(
         val customers = supabase.postgrest["customers"].select().decodeList<Customer>()
         val allItems = supabase.postgrest["delivery_items"].select().decodeList<DeliveryItem>()
         val products = supabase.postgrest["products"].select().decodeList<Product>()
+        val profiles = try {
+            supabase.postgrest["profiles"].select().decodeList<Profile>()
+        } catch (e: Exception) {
+            emptyList()
+        }
 
         val detailedOrders = orders.map { order ->
             val customer = customers.find { it.id == order.customer_id }
+            val driver = profiles.find { it.id == order.delivery_employee_id }
             val orderItems = allItems.filter { it.delivery_order_id == order.id }.map { item ->
                 val product = products.find { it.id == item.product_id }
                 DeliveryItemDetail(item, product)
             }
-            DeliveryOrderWithDetails(order, customer, orderItems)
+            DeliveryOrderWithDetails(order, customer, driver, orderItems)
         }
         
         emit(detailedOrders)
@@ -36,6 +42,14 @@ class DeliveryRepositoryImpl(
             
         val customer = order.customer_id?.let {
             supabase.postgrest["customers"].select { filter { eq("id", it) } }.decodeSingleOrNull<Customer>()
+        }
+        
+        val driver = order.delivery_employee_id?.let {
+            try {
+                supabase.postgrest["profiles"].select { filter { eq("id", it) } }.decodeSingleOrNull<Profile>()
+            } catch (e: Exception) {
+                null
+            }
         }
         
         val items = supabase.postgrest["delivery_items"]
@@ -56,13 +70,15 @@ class DeliveryRepositoryImpl(
             DeliveryItemDetail(item, products.find { it.id == item.product_id })
         }
         
-        return DeliveryOrderWithDetails(order, customer, orderItems)
+        return DeliveryOrderWithDetails(order, customer, driver, orderItems)
     }
 
     override suspend fun updateDeliveryStatus(id: String, newStatus: String) {
+        val now = java.time.Instant.now().toString()
         supabase.postgrest["delivery_orders"].update(
             {
                 set("status", newStatus)
+                set("updated_at", now)
             }
         ) {
             filter { eq("id", id) }

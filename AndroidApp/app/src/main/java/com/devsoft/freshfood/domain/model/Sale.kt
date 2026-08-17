@@ -12,5 +12,6 @@ data class Sale(
     val paid_amount: Double,
     val credit_amount: Double,
     val payment_method: String,
-    val status: String = "COMPLETED"
+    val status: String = "COMPLETED",
+    val created_at: String? = null
 )

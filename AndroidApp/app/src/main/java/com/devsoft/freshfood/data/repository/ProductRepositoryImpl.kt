@@ -23,6 +23,16 @@ class ProductRepositoryImpl(
             .decodeSingleOrNull<Product>()
     }
 
+    override suspend fun getProductByBarcode(barcode: String): Product? {
+        return try {
+            supabase.postgrest["products"]
+                .select { filter { eq("barcode", barcode) } }
+                .decodeSingleOrNull<Product>()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override suspend fun insertProduct(product: Product) {
         supabase.postgrest["products"].insert(product)
     }

@@ -17,39 +17,51 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryGreen,
-    secondary = SecondaryBlue,
-    tertiary = PrimaryGreenLight,
-    background = BackgroundLight,
-    surface = SurfaceLight,
+    primary = PrimaryBlue,
     onPrimary = Color.White,
+    primaryContainer = PrimaryBlueContainer,
+    onPrimaryContainer = OnPrimaryBlueContainer,
+    secondary = AccentSky,
     onSecondary = Color.White,
+    secondaryContainer = StatusInfoContainer,
+    onSecondaryContainer = PrimaryBlueDark,
+    tertiary = AccentIndigo,
     onTertiary = Color.White,
-    onBackground = TextPrimaryLight,
-    onSurface = TextPrimaryLight,
-    error = ErrorRed,
-    onError = Color.White
+    background = AppBackground,
+    onBackground = TextDark,
+    surface = CardSurface,
+    onSurface = TextDark,
+    surfaceVariant = CardSurfaceVariant,
+    onSurfaceVariant = TextMuted,
+    outline = CardBorder,
+    error = StatusError,
+    onError = Color.White,
+    errorContainer = StatusErrorContainer,
+    onErrorContainer = StatusError
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryGreenLight,
-    secondary = SecondaryBlueLight,
-    tertiary = PrimaryGreen,
-    background = BackgroundDark,
-    surface = SurfaceDark,
-    onPrimary = TextPrimaryLight,
-    onSecondary = TextPrimaryLight,
-    onTertiary = Color.White,
-    onBackground = TextPrimaryDark,
-    onSurface = TextPrimaryDark,
-    error = ErrorRed,
+    primary = PrimaryBlueLight,
+    onPrimary = Color.White,
+    primaryContainer = PrimaryBlueDark,
+    onPrimaryContainer = PrimaryBlueContainer,
+    secondary = AccentSky,
+    onSecondary = Color.White,
+    background = Color(0xFF0F172A),
+    onBackground = Color(0xFFF8FAFC),
+    surface = Color(0xFF1E293B),
+    onSurface = Color(0xFFF8FAFC),
+    surfaceVariant = Color(0xFF334155),
+    onSurfaceVariant = Color(0xFF94A3B8),
+    outline = Color(0xFF475569),
+    error = StatusError,
     onError = Color.White
 )
 
 @Composable
 fun FreshFoodTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Set to true to enable Material You dynamic colors
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -72,7 +84,7 @@ fun FreshFoodTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography, // Ensure Typography is defined in Type.kt
+        typography = Typography,
         content = content
     )
 }

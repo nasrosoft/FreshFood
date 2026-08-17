@@ -11,6 +11,8 @@ data class Product(
     val brand_id: String? = null,
     val description: String? = null,
     val image_url: String? = null,
+    val image_source: String? = null,
+    val emoji: String? = null,
     val unit: String = "Unit",
     val purchase_price: Double = 0.0,
     val selling_price: Double = 0.0,

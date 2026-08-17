@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,68 +18,82 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.devsoft.freshfood.domain.model.Customer
 import com.devsoft.freshfood.domain.model.Product
+import com.devsoft.freshfood.domain.model.Profile
+import com.devsoft.freshfood.presentation.components.BarcodeScannerScreen
+import com.devsoft.freshfood.presentation.components.ProductImageView
+import com.devsoft.freshfood.presentation.customers.CustomersUiState
+import com.devsoft.freshfood.presentation.customers.CustomersViewModel
 import com.devsoft.freshfood.presentation.products.ProductsViewModel
-
-// Custom colors based on the image
-val PosGreen = Color(0xFF679B50)
-val PosLightGreen = Color(0xFFE8F3E5)
-val PosBackground = Color(0xFFF3F3F3)
-val PosRed = Color(0xFFE5695C)
-val PosDarkGrey = Color(0xFF333333)
+import com.devsoft.freshfood.ui.theme.*
+import com.devsoft.freshfood.utils.PdfReceiptGenerator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PosScreen(
     viewModel: PosViewModel,
     productsViewModel: ProductsViewModel,
-    customersViewModel: com.devsoft.freshfood.presentation.customers.CustomersViewModel,
+    customersViewModel: CustomersViewModel,
     onOpenDrawer: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val productsState by productsViewModel.uiState.collectAsState()
     val customersState by customersViewModel.uiState.collectAsState()
-    
+    val context = LocalContext.current
+
     var showCustomerDialog by remember { mutableStateOf(false) }
-    var selectedCustomer by remember { mutableStateOf<com.devsoft.freshfood.domain.model.Customer?>(null) }
+    var selectedCustomer by remember { mutableStateOf<Customer?>(null) }
     var customerSearchQuery by remember { mutableStateOf("") }
     
-    // Load customers when screen opens
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    var showDriverDialog by remember { mutableStateOf(false) }
+    var selectedDriver by remember { mutableStateOf<Profile?>(null) }
+    var createDelivery by remember { mutableStateOf(false) }
+    var showScanner by remember { mutableStateOf(false) }
+
+    var showPaymentMethodDialog by remember { mutableStateOf(false) }
+    var selectedPaymentMethod by remember { mutableStateOf("CASH") }
+
+    var quantityDialogItem by remember { mutableStateOf<CartItem?>(null) }
+    var customQuantityText by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
         customersViewModel.loadCustomers()
     }
-    
-    val context = androidx.compose.ui.platform.LocalContext.current
 
-    var showScanner by remember { mutableStateOf(false) }
-    var quantityDialogItem by remember { mutableStateOf<com.devsoft.freshfood.presentation.sales.CartItem?>(null) }
-    var customQuantityText by remember { mutableStateOf("") }
-    var createDelivery by remember { mutableStateOf(false) }
-    var showDriverDialog by remember { mutableStateOf(false) }
-    var selectedDriver by remember { mutableStateOf<com.devsoft.freshfood.domain.model.Profile?>(null) }
+    if (showScanner) {
+        BarcodeScannerScreen(onBarcodeScanned = { barcode ->
+            showScanner = false
+            val product = productsViewModel.findProductByBarcode(barcode)
+            if (product != null) {
+                viewModel.addToCart(product)
+            }
+        })
+        return
+    }
 
     if (quantityDialogItem != null) {
         AlertDialog(
             onDismissRequest = { quantityDialogItem = null },
-            title = { Text("Set Quantity") },
+            title = { Text("Set Quantity", fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
                     value = customQuantityText,
                     onValueChange = { customQuantityText = it },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     label = { Text("Quantity") }
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     val qty = customQuantityText.toIntOrNull()
                     if (qty != null) {
                         viewModel.setQuantity(quantityDialogItem!!.product, qty)
@@ -89,76 +104,431 @@ fun PosScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { quantityDialogItem = null }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { quantityDialogItem = null }) { Text("Cancel") }
             }
         )
     }
 
-    if (showScanner) {
-        com.devsoft.freshfood.presentation.components.BarcodeScannerScreen(onBarcodeScanned = { barcode ->
-            showScanner = false
-            val product = productsViewModel.findProductByBarcode(barcode)
-            if (product != null) {
-                viewModel.addToCart(product)
-            }
-        })
-        return
-    }
-
+    // Modern Invoice Result Dialog
     if (uiState.checkoutMessage != null) {
+        val total = uiState.lastSaleTotal ?: 0.0
+        val items = uiState.lastSaleItems ?: emptyList()
+
         AlertDialog(
             onDismissRequest = { viewModel.dismissCheckoutMessage() },
-            title = { Text("Checkout") },
-            text = { Text(uiState.checkoutMessage!!) },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Invoice", fontWeight = FontWeight.Bold)
+                    Text("✓ Completed", color = StatusSuccess, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text("Customer: ${selectedCustomer?.name ?: "Guest"}", fontWeight = FontWeight.SemiBold, color = TextDark)
+                    Text("Payment Method: $selectedPaymentMethod", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider(color = CardBorder)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                        items(items) { cartItem ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("${cartItem.quantity}x ${cartItem.product.name}", style = MaterialTheme.typography.bodyMedium, color = TextDark)
+                                Text("${cartItem.quantity * cartItem.product.selling_price} DA", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                            }
+                        }
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 8.dp), color = CardBorder)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("TOTAL", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("${String.format(java.util.Locale.US, "%,.0f", total)} DA", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = PrimaryBlueDark)
+                    }
+                }
+            },
             confirmButton = {
-                TextButton(onClick = { viewModel.dismissCheckoutMessage() }) {
-                    Text("OK")
+                Button(onClick = { 
+                    viewModel.dismissCheckoutMessage()
+                    selectedCustomer = null
+                    selectedDriver = null
+                    createDelivery = false
+                }) {
+                    Text("New Sale")
                 }
             },
             dismissButton = {
-                if (uiState.lastSaleItems != null && uiState.lastSaleTotal != null) {
-                    TextButton(onClick = {
-                        val uri = com.devsoft.freshfood.utils.PdfReceiptGenerator.generateAndGetUri(
-                            context,
-                            uiState.lastSaleItems!!,
-                            uiState.lastSaleTotal!!
-                        )
-                        if (uri != null) {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                type = "application/pdf"
-                                putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(android.content.Intent.createChooser(intent, "Share Receipt"))
+                TextButton(onClick = {
+                    val uri = PdfReceiptGenerator.generateAndGetUri(context, items, total)
+                    if (uri != null) {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                    }) {
-                        Text("Print / Share")
+                        context.startActivity(android.content.Intent.createChooser(intent, "Print / Share Receipt"))
                     }
+                }) {
+                    Text("Print / Share PDF")
                 }
             }
         )
     }
 
+    Scaffold(
+        topBar = {
+            Surface(color = CardSurface, shadowElevation = 1.dp) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onOpenDrawer) {
+                                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = PrimaryBlueDark)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New Sale", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                        }
+                        com.devsoft.freshfood.presentation.components.GlobalSyncButton()
+                    }
+
+                    // Search & Barcode Top Bar (matching reference UI)
+                    OutlinedTextField(
+                        value = productsState.searchQuery,
+                        onValueChange = { productsViewModel.updateSearchQuery(it) },
+                        placeholder = { Text("Scan barcode or search product...", color = TextMuted, fontSize = 14.sp) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
+                        trailingIcon = {
+                            IconButton(onClick = { showScanner = true }) {
+                                Icon(Icons.Filled.List, contentDescription = "Scan", tint = PrimaryBlue)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = CardSurfaceVariant,
+                            unfocusedContainerColor = CardSurfaceVariant,
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color.Transparent
+                        ),
+                        singleLine = true
+                    )
+                }
+            }
+        },
+        containerColor = AppBackground
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            // Customer & Delivery Selection Chips
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Customer Chip
+                AssistChip(
+                    onClick = { showCustomerDialog = true },
+                    label = { 
+                        Text(
+                            selectedCustomer?.name ?: "Select Customer", 
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedCustomer != null) FontWeight.Bold else FontWeight.Normal
+                        ) 
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Delivery Toggle Chip
+                FilterChip(
+                    selected = createDelivery,
+                    onClick = { 
+                        createDelivery = !createDelivery
+                        if (createDelivery) showDriverDialog = true
+                    },
+                    label = { 
+                        Text(
+                            if (createDelivery) (selectedDriver?.first_name ?: "Assign Driver") else "Delivery",
+                            fontSize = 12.sp
+                        ) 
+                    },
+                    leadingIcon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                )
+            }
+
+            // Quick Add Horizontal List (matching reference design)
+            Text(
+                "Quick Add",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(productsState.filteredProducts) { product ->
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardSurface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        modifier = Modifier.width(130.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            ProductImageView(
+                                imageUrl = product.image_url,
+                                emoji = product.emoji,
+                                productName = product.name,
+                                size = 48.dp,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                product.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                "${product.selling_price} DA",
+                                fontSize = 11.sp,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue)
+                                    .clickable { viewModel.addToCart(product) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Cart Items List
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp).fillMaxSize()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Cart (${uiState.cartItems.sumOf { it.quantity }})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        )
+                        if (uiState.cartItems.isNotEmpty()) {
+                            Text(
+                                "Clear",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StatusError,
+                                modifier = Modifier.clickable { viewModel.clearCart() }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (uiState.cartItems.isEmpty()) {
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text("Your cart is empty. Add products above.", color = TextMuted, fontSize = 13.sp)
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            items(uiState.cartItems) { item ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    ProductImageView(
+                                        imageUrl = item.product.image_url,
+                                        emoji = item.product.emoji,
+                                        productName = item.product.name,
+                                        size = 40.dp,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(item.product.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("${item.quantity} x ${item.product.selling_price} DA", fontSize = 11.sp, color = TextMuted)
+                                    }
+
+                                    // Quantity Stepper [- 5 +]
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(CardSurfaceVariant)
+                                            .padding(horizontal = 4.dp)
+                                    ) {
+                                        IconButton(
+                                            onClick = { viewModel.decreaseQuantity(item.product) },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Text("-", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = PrimaryBlue)
+                                        }
+                                        Text(
+                                            "${item.quantity}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier
+                                                .padding(horizontal = 4.dp)
+                                                .clickable { 
+                                                    quantityDialogItem = item
+                                                    customQuantityText = item.quantity.toString()
+                                                }
+                                        )
+                                        IconButton(
+                                            onClick = { viewModel.addToCart(item.product) },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(Icons.Filled.Add, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 10.dp), color = CardBorder)
+
+                    // Subtotal & Total
+                    val total = uiState.totalAmount
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Total", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("${String.format(java.util.Locale.US, "%,.0f", total)} DA", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = { showPaymentMethodDialog = true },
+                        enabled = uiState.cartItems.isNotEmpty() && (!createDelivery || selectedDriver != null),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text("Proceed to Payment", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+
+    // Payment Method Selection Dialog
+    if (showPaymentMethodDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaymentMethodDialog = false },
+            title = { Text("Select Payment Method", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPaymentMethod = "CASH" }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = selectedPaymentMethod == "CASH", onClick = { selectedPaymentMethod = "CASH" })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cash (Espèces)", fontWeight = FontWeight.Bold)
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedPaymentMethod = "CREDIT" }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = selectedPaymentMethod == "CREDIT", onClick = { selectedPaymentMethod = "CREDIT" })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Customer Credit (Crédit)", fontWeight = FontWeight.Bold, color = StatusWarning)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showPaymentMethodDialog = false
+                    viewModel.checkout(selectedPaymentMethod, selectedCustomer?.id, createDelivery, selectedDriver?.id)
+                }) {
+                    Text("Confirm & Checkout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaymentMethodDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Customer Selection Dialog
     if (showCustomerDialog) {
         AlertDialog(
             onDismissRequest = { showCustomerDialog = false },
-            title = { Text("Select Customer") },
+            title = { Text("Select Customer", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = customerSearchQuery,
                         onValueChange = { customerSearchQuery = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                         placeholder = { Text("Search by name...") },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = Color.Gray) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
                         singleLine = true
                     )
                     
-                    LazyColumn {
+                    LazyColumn(modifier = Modifier.heightIn(max = 280.dp)) {
                         item {
                             TextButton(
                                 onClick = {
@@ -170,30 +540,30 @@ fun PosScreen(
                                 Text("Guest (No Customer)")
                             }
                         }
-                        if (customersState is com.devsoft.freshfood.presentation.customers.CustomersUiState.Success) {
-                            val allCustomers = (customersState as com.devsoft.freshfood.presentation.customers.CustomersUiState.Success).customers
-                            val filteredCustomers = if (customerSearchQuery.isBlank()) {
-                                allCustomers
-                            } else {
-                                allCustomers.filter { it.name.contains(customerSearchQuery, ignoreCase = true) }
-                            }
-                            
-                            items(filteredCustomers) { customer ->
-                                TextButton(
-                                    onClick = {
-                                        selectedCustomer = customer
-                                        showCustomerDialog = false
-                                        customerSearchQuery = "" // Reset query
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
+                        if (customersState is CustomersUiState.Success) {
+                            val allCustomers = (customersState as CustomersUiState.Success).customers
+                            val filtered = if (customerSearchQuery.isBlank()) allCustomers else allCustomers.filter { it.name.contains(customerSearchQuery, ignoreCase = true) }
+                            items(filtered) { cust ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 3.dp)
+                                        .clickable {
+                                            selectedCustomer = cust
+                                            showCustomerDialog = false
+                                        },
+                                    colors = CardDefaults.cardColors(containerColor = CardSurfaceVariant)
                                 ) {
-                                    Text(customer.name)
-                                }
-                            }
-                        } else if (customersState is com.devsoft.freshfood.presentation.customers.CustomersUiState.Loading) {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator()
+                                    Row(
+                                        modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(cust.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        if (cust.current_credit > 0) {
+                                            Text("Credit: ${cust.current_credit} DA", fontSize = 11.sp, color = StatusWarning)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -201,412 +571,44 @@ fun PosScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showCustomerDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showCustomerDialog = false }) { Text("Close") }
             }
         )
     }
 
+    // Driver Selection Dialog
     if (showDriverDialog) {
         AlertDialog(
             onDismissRequest = { showDriverDialog = false },
-            title = { Text("Select Delivery Driver") },
+            title = { Text("Assign Delivery Driver", fontWeight = FontWeight.Bold) },
             text = {
-                LazyColumn {
-                    items(uiState.deliveryDrivers.size) { index ->
-                        val driver = uiState.deliveryDrivers[index]
-                        TextButton(
-                            onClick = {
-                                selectedDriver = driver
-                                showDriverDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                LazyColumn(modifier = Modifier.heightIn(max = 280.dp)) {
+                    items(uiState.deliveryDrivers) { driver: Profile ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    selectedDriver = driver
+                                    showDriverDialog = false
+                                },
+                            colors = CardDefaults.cardColors(containerColor = CardSurfaceVariant)
                         ) {
-                            Text("${driver.first_name} ${driver.last_name}")
+                            Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Person, contentDescription = null, tint = PrimaryBlue)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    listOfNotNull(driver.first_name, driver.last_name).joinToString(" ").ifBlank { driver.email ?: "Driver" },
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDriverDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showDriverDialog = false }) { Text("Close") }
             }
         )
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Bill", fontWeight = FontWeight.Bold, color = Color.Black) },
-                navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.Black)
-                    }
-                },
-                actions = {
-                    com.devsoft.freshfood.presentation.components.GlobalSyncButton(tint = Color.Black)
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        },
-        containerColor = PosBackground
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-        ) {
-            // 1. Select Customer (Dashed border)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(PosLightGreen)
-                    .clickable { showCustomerDialog = true }
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Person, contentDescription = null, tint = PosGreen)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = selectedCustomer?.name ?: "Select Customer", 
-                        color = PosGreen, 
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            if (createDelivery) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFFFF3E0))
-                        .clickable { showDriverDialog = true }
-                        .padding(12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.ShoppingCart, contentDescription = null, tint = Color(0xFFE65100))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = selectedDriver?.let { "${it.first_name} ${it.last_name}" } ?: "Select Delivery Driver", 
-                            color = Color(0xFFE65100), 
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            // 2. Search Bar
-            OutlinedTextField(
-                value = productsState.searchQuery,
-                onValueChange = { productsViewModel.updateSearchQuery(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search products by name or SKU", color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = Color.Gray) },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.List, // Placeholder for Barcode scanner icon
-                        contentDescription = "Scan",
-                        tint = Color.Black,
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .background(Color.White, RoundedCornerShape(8.dp))
-                            .clickable { showScanner = true }
-                            .padding(4.dp)
-                    )
-                },
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = Color.LightGray,
-                    unfocusedBorderColor = Color.LightGray
-                ),
-                singleLine = true
-            )
-
-
-
-            // 4. Products Horizontal List
-            if (productsState.isLoading) {
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = PosGreen)
-                }
-            } else {
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(productsState.filteredProducts.size) { index ->
-                        val product = productsState.filteredProducts[index]
-                        ProductPosCard(product = product, onClick = { viewModel.addToCart(product) })
-                    }
-                }
-            }
-
-            // 5. Bill Items Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Bill Items (${uiState.cartItems.size})",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PosDarkGrey
-                )
-                Text(
-                    text = "Total: ${uiState.totalAmount} DA",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PosGreen
-                )
-            }
-
-            // 6. Bill Items List (Scrollable)
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(uiState.cartItems.size) { index ->
-                    val item = uiState.cartItems[index]
-                    CartItemRow(
-                        item = item,
-                        onIncrease = { viewModel.addToCart(item.product) },
-                        onDecrease = { viewModel.decreaseQuantity(item.product) },
-                        onRemove = { viewModel.removeItem(item.product) },
-                        onQuantityClick = { 
-                            quantityDialogItem = item
-                            customQuantityText = item.quantity.toString()
-                        }
-                    )
-                }
-            }
-
-            // 7. Bottom Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Pagination Placeholder
-                // Pagination Placeholder removed
-
-                // Action Buttons
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    
-                    // Create Delivery Toggle
-                    if (selectedCustomer != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            androidx.compose.material3.Checkbox(
-                                checked = createDelivery,
-                                onCheckedChange = { createDelivery = it },
-                                colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = PosGreen)
-                            )
-                            Text("Delivery", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                        }
-                    }
-
-                    Button(
-                        onClick = { viewModel.clearCart() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PosBackground,
-                            contentColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("New Bill", fontWeight = FontWeight.SemiBold)
-                    }
-
-                    Button(
-                        onClick = { viewModel.checkout("CASH", selectedCustomer?.id, createDelivery, selectedDriver?.id) },
-                        enabled = uiState.cartItems.isNotEmpty() && (!createDelivery || selectedDriver != null),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PosGreen,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Checkout", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ProductPosCard(product: Product, onClick: () -> Unit) {
-    Card(
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier
-            .width(100.dp)
-            .clickable { onClick() }
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Placeholder for Product Image
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(PosBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.ShoppingCart, contentDescription = null, tint = Color.LightGray)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = product.name,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "Stock: ${product.current_stock}",
-                fontSize = 10.sp,
-                color = if (product.current_stock <= 0) PosRed else Color.Gray,
-                maxLines = 1,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun CartItemRow(
-    item: CartItem,
-    onIncrease: () -> Unit,
-    onDecrease: () -> Unit,
-    onRemove: () -> Unit,
-    onQuantityClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Item Image Placeholder
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(PosBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.ShoppingCart, contentDescription = null, tint = Color.LightGray)
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            // Name and Price
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.product.name,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    fontSize = 14.sp
-                )
-                Text(
-                    text = "${item.product.selling_price} DA",
-                    color = Color.Gray,
-                    fontSize = 12.sp
-                )
-            }
-            
-            // Actions
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Delete
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(PosRed)
-                        .clickable { onRemove() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color.White, modifier = Modifier.size(16.dp))
-                }
-                
-                // Minus
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(PosLightGreen)
-                        .clickable { onDecrease() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("-", color = PosGreen, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                }
-                
-                // Quantity
-                Text(
-                    text = "${item.quantity}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .clickable { onQuantityClick() }
-                        .padding(4.dp) // extra padding for larger touch target
-                )
-                
-                // Plus
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(PosGreen)
-                        .clickable { onIncrease() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(16.dp))
-                }
-            }
-        }
     }
 }

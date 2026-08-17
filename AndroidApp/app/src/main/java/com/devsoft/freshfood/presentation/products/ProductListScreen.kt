@@ -1,27 +1,41 @@
 package com.devsoft.freshfood.presentation.products
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.devsoft.freshfood.domain.model.Product
 import com.devsoft.freshfood.presentation.components.BarcodeScannerScreen
+import com.devsoft.freshfood.presentation.components.ProductImageView
+import com.devsoft.freshfood.ui.theme.*
+
+enum class ProductFilter(val label: String) {
+    ALL("All"),
+    LOW_STOCK("Low Stock"),
+    EXPIRING("Expiring"),
+    EXPIRED("Expired")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,12 +45,15 @@ fun ProductListScreen(
     onOpenDrawer: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = androidx.compose.ui.platform.LocalContext.current
     
     LaunchedEffect(Unit) {
         viewModel.loadProducts()
     }
+
+    var selectedFilter by remember { mutableStateOf(ProductFilter.ALL) }
     var showScanner by remember { mutableStateOf(false) }
+
+    var selectedProductForDetail by remember { mutableStateOf<Product?>(null) }
     var selectedProductForStock by remember { mutableStateOf<Product?>(null) }
     var stockQuantity by remember { mutableStateOf("") }
     var stockExpiration by remember { mutableStateOf("") }
@@ -65,7 +82,7 @@ fun ProductListScreen(
             showScanner = false
             val product = viewModel.findProductByBarcode(barcode)
             if (product != null) {
-                selectedProductForStock = product
+                selectedProductForDetail = product
             } else {
                 onAddProductClick(barcode)
             }
@@ -73,6 +90,251 @@ fun ProductListScreen(
         return
     }
 
+    // Filter products based on selected filter tab
+    val displayedProducts = remember(uiState.filteredProducts, selectedFilter) {
+        when (selectedFilter) {
+            ProductFilter.ALL -> uiState.filteredProducts
+            ProductFilter.LOW_STOCK -> uiState.filteredProducts.filter { it.current_stock <= it.min_stock }
+            ProductFilter.EXPIRING -> uiState.filteredProducts // Placeholder for expiring filter
+            ProductFilter.EXPIRED -> uiState.filteredProducts.filter { it.current_stock <= 0 }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            Surface(color = CardSurface, shadowElevation = 1.dp) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                    // Top App Bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onOpenDrawer) {
+                                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = PrimaryBlueDark)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Products",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
+                            )
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            com.devsoft.freshfood.presentation.components.GlobalSyncButton()
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(onClick = { onAddProductClick(null) }) {
+                                Icon(Icons.Filled.Add, contentDescription = "Add Product", tint = PrimaryBlue)
+                            }
+                        }
+                    }
+
+                    // Search Bar with Barcode Scan Button
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        placeholder = { Text("Search products by name or barcode...", color = TextMuted, fontSize = 14.sp) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
+                        trailingIcon = {
+                            IconButton(onClick = { showScanner = true }) {
+                                Icon(Icons.Filled.List, contentDescription = "Scan", tint = PrimaryBlue)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = CardSurfaceVariant,
+                            unfocusedContainerColor = CardSurfaceVariant,
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color.Transparent
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Filter Chips (All, Low Stock, Expiring, Expired)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ProductFilter.values().forEach { filter ->
+                            val isSelected = selectedFilter == filter
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (isSelected) PrimaryBlue else CardSurfaceVariant)
+                                    .clickable { selectedFilter = filter }
+                                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    filter.label,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else TextMuted
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        containerColor = AppBackground
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
+            } else if (displayedProducts.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("📦", fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("No products found", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Try searching or add a new product", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(displayedProducts) { product ->
+                        ProductGridCard(
+                            product = product,
+                            onClick = { selectedProductForDetail = product }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // PRODUCT DETAIL DIALOG / BOTTOM SHEET
+    // -------------------------------------------------------------
+    if (selectedProductForDetail != null) {
+        val product = selectedProductForDetail!!
+        val profitUnit = product.selling_price - product.purchase_price
+        val margin = if (product.selling_price > 0) (profitUnit / product.selling_price) * 100 else 0.0
+
+        AlertDialog(
+            onDismissRequest = { selectedProductForDetail = null },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Product Detail", fontWeight = FontWeight.Bold)
+                    IconButton(onClick = { selectedProductForDetail = null }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close")
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Big Product Image Preview
+                    ProductImageView(
+                        imageUrl = product.image_url,
+                        emoji = product.emoji,
+                        productName = product.name,
+                        size = 110.dp,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(product.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                    product.barcode?.let { bc ->
+                        Text("Barcode: $bc", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Pricing breakdown card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = PrimaryBlueContainer),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            DetailRow("Selling Price", "${product.selling_price} DA", FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            DetailRow("Purchase Cost", "${product.purchase_price} DA", FontWeight.Normal)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            DetailRow("Profit / Unit", "${String.format(java.util.Locale.US, "%.1f", profitUnit)} DA", FontWeight.SemiBold, StatusSuccess)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            DetailRow("Margin", "${String.format(java.util.Locale.US, "%.1f", margin)}%", FontWeight.SemiBold, StatusSuccess)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Stock card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = CardSurfaceVariant),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("Available Stock", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                                Text("${product.current_stock} ${product.unit}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
+                                onClick = {
+                                    selectedProductForStock = product
+                                    selectedProductForDetail = null
+                                },
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("+ Add Stock")
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    selectedProductForEdit = product
+                    selectedProductForDetail = null
+                }) {
+                    Text("Edit Product")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedProductForDetail = null }) { Text("Close") }
+            }
+        )
+    }
+
+    // -------------------------------------------------------------
+    // ADD STOCK DIALOG
+    // -------------------------------------------------------------
     if (selectedProductForStock != null) {
         AlertDialog(
             onDismissRequest = { selectedProductForStock = null },
@@ -82,18 +344,21 @@ fun ProductListScreen(
                     OutlinedTextField(
                         value = stockQuantity,
                         onValueChange = { stockQuantity = it },
-                        label = { Text("Quantity") }
+                        label = { Text("Quantity") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = stockExpiration,
                         onValueChange = { stockExpiration = it },
-                        label = { Text("Expiration Date (YYYY-MM-DD)") }
+                        label = { Text("Expiration Date (YYYY-MM-DD)") },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     val qty = stockQuantity.toIntOrNull() ?: 0
                     if (qty > 0) {
                         viewModel.addStock(selectedProductForStock!!, qty, stockExpiration)
@@ -111,6 +376,9 @@ fun ProductListScreen(
         )
     }
 
+    // -------------------------------------------------------------
+    // EDIT PRODUCT DIALOG
+    // -------------------------------------------------------------
     if (selectedProductForEdit != null) {
         AlertDialog(
             onDismissRequest = { selectedProductForEdit = null },
@@ -120,45 +388,44 @@ fun ProductListScreen(
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Name") }
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editBarcode,
                         onValueChange = { editBarcode = it },
-                        label = { Text("Barcode") }
+                        label = { Text("Barcode") },
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editPurchasePrice,
                         onValueChange = { editPurchasePrice = it },
-                        label = { Text("Purchase Price") },
+                        label = { Text("Purchase Price (DA)") },
+                        modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editSellingPrice,
                         onValueChange = { editSellingPrice = it },
-                        label = { Text("Selling Price") },
+                        label = { Text("Selling Price (DA)") },
+                        modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editStock,
                         onValueChange = { editStock = it },
-                        label = { Text("Stock") },
+                        label = { Text("Stock Quantity") },
+                        modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = "Total Lots: $lotCount",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     val updatedProduct = selectedProductForEdit!!.copy(
                         name = editName,
                         barcode = editBarcode.takeIf { it.isNotBlank() },
@@ -177,114 +444,88 @@ fun ProductListScreen(
             }
         )
     }
+}
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Products & Stock", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-IconButton(onClick = onOpenDrawer) {
-                        Icon(Icons.Filled.Menu, contentDescription = "Menu")
-                    }
-                },
-                actions = {
-                    com.devsoft.freshfood.presentation.components.GlobalSyncButton()
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+@Composable
+fun ProductGridCard(
+    product: Product,
+    onClick: () -> Unit
+) {
+    val isLowStock = product.current_stock <= product.min_stock
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Centered Product Image/Emoji
+            ProductImageView(
+                imageUrl = product.image_url,
+                emoji = product.emoji,
+                productName = product.name,
+                size = 72.dp,
+                shape = RoundedCornerShape(12.dp)
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { onAddProductClick(null) }) {
-                Icon(Icons.Filled.Add, contentDescription = "Add Product")
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Product Name
+            Text(
+                text = product.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Selling Price
+            Text(
+                text = "${product.selling_price} DA",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryBlue
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Stock Status Badge
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                placeholder = { Text("Search by name or barcode...") },
-                leadingIcon = { Icon(Icons.Filled.Search, null) },
-                trailingIcon = {
-                    IconButton(onClick = { showScanner = true }) {
-                        Text("📷") // Simple camera/scan indicator
-                    }
-                },
-                singleLine = true
-            )
-
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else if (uiState.error != null) {
-                    Text(
-                        text = "Error: ${uiState.error}",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                } else {
-                    if (uiState.filteredProducts.isEmpty()) {
-                        Text("No products found.", modifier = Modifier.align(Alignment.Center))
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(uiState.filteredProducts) { product ->
-                                ProductCard(
-                                    product = product,
-                                    onClick = { selectedProductForStock = product },
-                                    onEditClick = { selectedProductForEdit = product }
-                                )
-                            }
-                        }
-                    }
-                }
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (isLowStock) StatusWarningContainer else StatusSuccessContainer)
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = if (isLowStock) "Stock: ${product.current_stock} Low" else "Stock: ${product.current_stock}",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isLowStock) StatusWarning else StatusSuccess
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductCard(product: Product, onClick: () -> Unit, onEditClick: () -> Unit) {
-    val isLowStock = product.current_stock <= product.min_stock
-    Card(
-        onClick = onClick,
+private fun DetailRow(label: String, value: String, weight: FontWeight = FontWeight.Normal, color: Color = TextDark) {
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Price: ${product.selling_price} DA", style = MaterialTheme.typography.bodyMedium)
-                Text(text = "Stock: ${product.current_stock} ${product.unit}", style = MaterialTheme.typography.bodyMedium)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isLowStock) {
-                    Icon(
-                        imageVector = Icons.Filled.Warning,
-                        contentDescription = "Low Stock",
-                        tint = Color.Red,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                }
-                IconButton(onClick = onEditClick) {
-                    Icon(imageVector = Icons.Filled.Edit, contentDescription = "Edit Product")
-                }
-            }
-        }
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = weight, color = color)
     }
 }

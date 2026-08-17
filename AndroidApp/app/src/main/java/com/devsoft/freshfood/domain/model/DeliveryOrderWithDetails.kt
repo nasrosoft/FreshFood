@@ -3,6 +3,7 @@ package com.devsoft.freshfood.domain.model
 data class DeliveryOrderWithDetails(
     val order: DeliveryOrder,
     val customer: Customer?,
+    val driver: Profile? = null,
     val items: List<DeliveryItemDetail>
 )
 
