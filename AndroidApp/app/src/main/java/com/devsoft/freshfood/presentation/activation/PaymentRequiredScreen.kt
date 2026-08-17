@@ -5,8 +5,10 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Refresh
@@ -33,6 +35,15 @@ fun PaymentRequiredScreen(
 ) {
     val context = LocalContext.current
 
+    fun dialPhone(number: String) {
+        try {
+            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number"))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = AppBackground
@@ -40,7 +51,7 @@ fun PaymentRequiredScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(20.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
@@ -54,36 +65,60 @@ fun PaymentRequiredScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(28.dp),
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Payment / Billing Warning Icon Container
                     Box(
                         modifier = Modifier
-                            .size(88.dp)
+                            .size(76.dp)
                             .clip(CircleShape)
                             .background(StatusWarningContainer),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("💳", fontSize = 40.sp)
+                        Text("💳", fontSize = 36.sp)
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Title
                     Text(
                         text = stringResource(R.string.payment_required),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = TextDark,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Explanation Message
+                    // French / English Explanation Message
                     Text(
                         text = stringResource(R.string.payment_required_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider(color = CardBorder)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Arabic Title & Explanation Message
+                    Text(
+                        text = stringResource(R.string.payment_required_ar_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = stringResource(R.string.payment_required_ar_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextMuted,
                         textAlign = TextAlign.Center,
@@ -92,47 +127,21 @@ fun PaymentRequiredScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Phone Contact Card (Clickable to dial)
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = PrimaryBlueContainer),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:0660612941"))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                Icons.Filled.Call,
-                                contentDescription = "Call",
-                                tint = PrimaryBlueDark,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.payment_tell),
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryBlueDark,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
+                    // Two distinct phone contact cards
+                    PhoneContactCard(
+                        phoneText = stringResource(R.string.tell_1),
+                        onClick = { dialPhone("0660612941") }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    PhoneContactCard(
+                        phoneText = stringResource(R.string.tell_2),
+                        onClick = { dialPhone("0549740336") }
+                    )
 
                     if (errorMessage != null) {
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Card(
                             colors = CardDefaults.cardColors(containerColor = StatusErrorContainer),
                             shape = RoundedCornerShape(10.dp)
@@ -141,40 +150,98 @@ fun PaymentRequiredScreen(
                                 text = errorMessage,
                                 color = StatusError,
                                 fontSize = 12.sp,
-                                modifier = Modifier.padding(10.dp),
+                                modifier = Modifier.padding(8.dp),
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                    // Refresh Status Button
+                    // 1. PRIMARY BUTTON: Make the Call Now by default
                     Button(
+                        onClick = { dialPhone("0660612941") },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Icon(Icons.Filled.Call, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            stringResource(R.string.call_now),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // 2. SECONDARY BUTTON: Actualiser le statut
+                    OutlinedButton(
                         onClick = onRefresh,
                         enabled = !isChecking,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            .height(48.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
                     ) {
                         if (isChecking) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = Color.White
+                                color = PrimaryBlue
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(stringResource(R.string.checking_status), fontWeight = FontWeight.Bold)
-                        } else {
-                            Icon(Icons.Filled.Refresh, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.refresh_status), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text(stringResource(R.string.checking_status), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        } else {
+                            Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.refresh_status), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PhoneContactCard(
+    phoneText: String,
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = PrimaryBlueContainer),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                Icons.Filled.Call,
+                contentDescription = "Call",
+                tint = PrimaryBlueDark,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = phoneText,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryBlueDark,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

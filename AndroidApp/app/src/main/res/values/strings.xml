@@ -83,8 +83,12 @@
     <string name="save_to_supabase">Save to Supabase</string>
     <!-- Payment Required & Activation -->
     <string name="payment_required">Payment Required</string>
+    <string name="payment_required_ar_title">الدفع مطلوب</string>
     <string name="payment_required_desc">Your application access is temporarily suspended because your bills have not been paid. Please contact the administrator after completing your payment.</string>
-    <string name="payment_tell">Tel : 06 60 61 29 41 / 05 49 74 03 36</string>
+    <string name="payment_required_ar_desc">تم تعليق الوصول إلى التطبيق مؤقتاً لعدم تسديد الفواتير. يرجى الاتصال بالإدارة بعد إتمام عملية الدفع.</string>
+    <string name="tell_1">Tel : 06 60 61 29 41</string>
+    <string name="tell_2">Tel : 05 49 74 03 36</string>
+    <string name="call_now">Call Now</string>
     <string name="refresh_status">Refresh Status</string>
     <string name="checking_status">Checking status...</string>
 </resources>
