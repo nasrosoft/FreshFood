@@ -62,6 +62,21 @@ fun DeliveryDashboardScreen(
         viewModel.loadDeliveries()
     }
 
+    LaunchedEffect(uiState) {
+        if (uiState is DeliveryUiState.Success && isDriver) {
+            val pendingCount = (uiState as DeliveryUiState.Success).deliveries.count { 
+                it.order.status.equals("PENDING", ignoreCase = true) || it.order.status.equals("ASSIGNED", ignoreCase = true) 
+            }
+            if (pendingCount > 0) {
+                com.devsoft.freshfood.utils.NotificationHelper.showDeliveryNotification(
+                    context = context,
+                    title = "Livraisons en attente 🚚",
+                    message = "Vous avez $pendingCount livraison(s) à effectuer aujourd'hui."
+                )
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.errorMessage.collect { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()

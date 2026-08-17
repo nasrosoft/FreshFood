@@ -49,6 +49,8 @@ fun DashboardScreen(
 ) {
     val uiState by dashboardViewModel.uiState.collectAsState()
 
+    var showNotificationAlerts by remember { mutableStateOf(false) }
+
     val todayDateFormatted = remember {
         try {
             LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault()))
@@ -59,6 +61,68 @@ fun DashboardScreen(
 
     val stockValue = remember(uiState.allProducts) {
         uiState.allProducts.sumOf { it.current_stock * it.purchase_price }
+    }
+
+    if (showNotificationAlerts) {
+        AlertDialog(
+            onDismissRequest = { showNotificationAlerts = false },
+            title = { Text(stringResource(R.string.alerts), fontWeight = FontWeight.Bold) },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    val lowStockCount = uiState.lowStockProducts.size
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = if (lowStockCount > 0) StatusWarningContainer else StatusSuccessContainer)
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (lowStockCount > 0) "⚠️" else "✅", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    stringResource(R.string.products_low_stock, lowStockCount),
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (lowStockCount > 0) StatusWarning else StatusSuccess
+                                )
+                                Text(
+                                    if (lowStockCount > 0) stringResource(R.string.low_stock_details) else stringResource(R.string.all_in_stock),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextMuted
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardSurfaceVariant)
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🚚", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    stringResource(R.string.todays_deliveries),
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextDark
+                                )
+                                Text(
+                                    "${stringResource(R.string.pending)}: ${uiState.pendingDeliveriesToday} | ${stringResource(R.string.completed)}: ${uiState.completedDeliveriesToday}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextMuted
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showNotificationAlerts = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -104,7 +168,7 @@ fun DashboardScreen(
                                 .size(38.dp)
                                 .clip(CircleShape)
                                 .background(PrimaryBlueContainer)
-                                .clickable { onOpenDrawer() },
+                                .clickable { showNotificationAlerts = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(Icons.Filled.Notifications, contentDescription = "Alerts", tint = PrimaryBlue, modifier = Modifier.size(20.dp))

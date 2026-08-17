@@ -111,6 +111,16 @@ fun PosScreen(
         )
     }
 
+    LaunchedEffect(uiState.checkoutMessage) {
+        if (uiState.checkoutMessage?.startsWith("Success") == true && createDelivery) {
+            com.devsoft.freshfood.utils.NotificationHelper.showDeliveryNotification(
+                context = context,
+                title = "Nouvelle livraison assignée 🚚",
+                message = "Commande de ${selectedCustomer?.name ?: "Client"} prête pour la livraison."
+            )
+        }
+    }
+
     // Modern Invoice Result Dialog
     if (uiState.checkoutMessage != null) {
         val total = uiState.lastSaleTotal ?: 0.0
