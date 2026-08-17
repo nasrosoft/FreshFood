@@ -88,18 +88,26 @@ fun MainAppScreen(
 
     LaunchedEffect(userId) {
         if (!userId.isNullOrBlank()) {
-            userProfile = profileRepository.getProfileById(userId)
+            try {
+                userProfile = profileRepository.getProfileById(userId)
+            } catch (e: Exception) {
+                // Ignore cancellation exceptions on activity recreate
+            }
         }
     }
 
     LaunchedEffect(Unit) {
-        activationRepository?.getAppSettings()?.onSuccess { setting: AppSetting ->
-            val fetchedName = setting.brand_name?.ifBlank { "Fresh Dairy" } ?: "Fresh Dairy"
-            val fetchedTagline = setting.brand_tagline?.ifBlank { "Stock & Sales Management" } ?: "Stock & Sales Management"
-            brandName = fetchedName
-            brandTagline = fetchedTagline
-            editBrandName = fetchedName
-            editBrandTagline = fetchedTagline
+        try {
+            activationRepository?.getAppSettings()?.onSuccess { setting: AppSetting ->
+                val fetchedName = setting.brand_name?.ifBlank { "Fresh Dairy" } ?: "Fresh Dairy"
+                val fetchedTagline = setting.brand_tagline?.ifBlank { "Stock & Sales Management" } ?: "Stock & Sales Management"
+                brandName = fetchedName
+                brandTagline = fetchedTagline
+                editBrandName = fetchedName
+                editBrandTagline = fetchedTagline
+            }
+        } catch (e: Exception) {
+            // Ignore cancellation exceptions on activity recreate
         }
     }
 
@@ -185,7 +193,7 @@ fun MainAppScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    userRole,
+                                    stringResource(if (isDelivery) R.string.delivery_role else R.string.admin_role),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = TextMuted
                                 )
@@ -448,21 +456,21 @@ fun MainAppScreen(
                         ) {
                             BottomNavButton(
                                 icon = Icons.Filled.Home,
-                                label = "Home",
+                                label = stringResource(R.string.home),
                                 selected = currentRoute == "deliveries",
                                 onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
                                 modifier = Modifier.weight(1f)
                             )
                             BottomNavButton(
                                 icon = Icons.Filled.ShoppingCart,
-                                label = "Deliveries",
+                                label = stringResource(R.string.deliveries),
                                 selected = currentRoute == "deliveries_list",
                                 onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
                                 modifier = Modifier.weight(1f)
                             )
                             BottomNavButton(
                                 icon = Icons.Filled.Person,
-                                label = "Profile",
+                                label = stringResource(R.string.profile),
                                 selected = false,
                                 onClick = { scope.launch { drawerState.open() } },
                                 modifier = Modifier.weight(1f)

@@ -39,6 +39,7 @@
     <string name="week">أسبوع</string>
     <string name="month">شهر</string>
     <string name="all_time">الكل</string>
+    <string name="all">الكل</string>
     <string name="customer_credit">ديون الزبائن</string>
     <string name="low_stock">نقص المخزون</string>
     <string name="overview">نظرة عامة</string>
@@ -91,4 +92,22 @@
     <string name="call_now">اتصل الآن</string>
     <string name="refresh_status">تحديث الحالة</string>
     <string name="checking_status">جاري التحقق من الحالة...</string>
+
+    <!-- Driver Dashboard -->
+    <string name="driver_home">الرئيسية للتوصيل</string>
+    <string name="good_morning_driver">صباح الخير، السائق 👋</string>
+    <string name="out_for_delivery">قيد التوصيل</string>
+    <string name="delivered">تم التوصيل</string>
+    <string name="assigned">تم التعيين</string>
+    <string name="next_delivery">التوصيل القادم</string>
+    <string name="view_delivery">عرض التوصيل</string>
+    <string name="todays_collection">مجموع التحصيل اليومي</string>
+    <string name="no_deliveries_found">لا توجد توصيلات</string>
+    <string name="driver_label">السائق : %s</string>
+    <string name="x_products">%d منتجات</string>
+    <string name="home">الرئيسية</string>
+    <string name="profile">الملف الشخصي</string>
+    <string name="delete_delivery_title">حذف طلب التوصيل</string>
+    <string name="delete_delivery_confirm">هل أنت متأكد من رغبتك في حذف طلب التوصيل هذا نهائياً؟</string>
+    <string name="delete">حذف</string>
 </resources>

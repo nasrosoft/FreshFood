@@ -39,6 +39,7 @@
     <string name="week">Semaine</string>
     <string name="month">Mois</string>
     <string name="all_time">Tout</string>
+    <string name="all">Tout</string>
     <string name="customer_credit">Crédit Client</string>
     <string name="low_stock">Stock Faible</string>
     <string name="overview">Aperçu</string>
@@ -91,4 +92,22 @@
     <string name="call_now">Appeler maintenant</string>
     <string name="refresh_status">Actualiser le statut</string>
     <string name="checking_status">Vérification du statut...</string>
+
+    <!-- Driver Dashboard -->
+    <string name="driver_home">Accueil Livreur</string>
+    <string name="good_morning_driver">Bonjour, Livreur 👋</string>
+    <string name="out_for_delivery">En cours de livraison</string>
+    <string name="delivered">Livré</string>
+    <string name="assigned">Assigné</string>
+    <string name="next_delivery">Prochaine Livraison</string>
+    <string name="view_delivery">Voir la livraison</string>
+    <string name="todays_collection">Recette du jour</string>
+    <string name="no_deliveries_found">Aucune livraison trouvée</string>
+    <string name="driver_label">Livreur : %s</string>
+    <string name="x_products">%d Produits</string>
+    <string name="home">Accueil</string>
+    <string name="profile">Profil</string>
+    <string name="delete_delivery_title">Supprimer la commande de livraison</string>
+    <string name="delete_delivery_confirm">Êtes-vous sûr de vouloir supprimer définitivement cette livraison ?</string>
+    <string name="delete">Supprimer</string>
 </resources>

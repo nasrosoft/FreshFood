@@ -20,9 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.devsoft.freshfood.R
 import com.devsoft.freshfood.domain.model.DeliveryOrderWithDetails
 import com.devsoft.freshfood.ui.theme.*
 import kotlinx.coroutines.launch
@@ -45,7 +47,14 @@ fun DeliveryDashboardScreen(
     var selectedFilterIndex by remember { mutableStateOf(0) }
     var selectedDeliveryDate by remember { mutableStateOf(LocalDate.now()) }
     var orderToDelete by remember { mutableStateOf<String?>(null) }
-    val filterTabs = listOf("All", "Pending", "Out for Delivery", "Delivered")
+    
+    val filterTabs = listOf(
+        stringResource(R.string.all),
+        stringResource(R.string.pending),
+        stringResource(R.string.out_for_delivery),
+        stringResource(R.string.delivered)
+    )
+    
     val context = LocalContext.current
     val isDriver = currentUserRole == "DELIVERY"
 
@@ -93,7 +102,7 @@ fun DeliveryDashboardScreen(
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                if (isDriver) "Driver Home" else "Deliveries",
+                                if (isDriver) stringResource(R.string.driver_home) else stringResource(R.string.deliveries),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = TextDark
@@ -193,7 +202,12 @@ fun DeliveryDashboardScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("Good morning, Driver 👋", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                            Text(
+                                                stringResource(R.string.good_morning_driver), 
+                                                color = Color.White, 
+                                                fontWeight = FontWeight.Bold, 
+                                                fontSize = 16.sp
+                                            )
                                             Text("🚚", fontSize = 22.sp)
                                         }
                                         Spacer(modifier = Modifier.height(12.dp))
@@ -201,9 +215,9 @@ fun DeliveryDashboardScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceAround
                                         ) {
-                                            DriverStatItem(count = "$totalCount", label = "Total", color = Color.White)
-                                            DriverStatItem(count = "$completedCount", label = "Completed", color = StatusSuccessContainer)
-                                            DriverStatItem(count = "$pendingCount", label = "Pending", color = StatusWarningContainer)
+                                            DriverStatItem(count = "$totalCount", label = stringResource(R.string.total), color = Color.White)
+                                            DriverStatItem(count = "$completedCount", label = stringResource(R.string.completed), color = StatusSuccessContainer)
+                                            DriverStatItem(count = "$pendingCount", label = stringResource(R.string.pending), color = StatusWarningContainer)
                                         }
                                     }
                                 }
@@ -225,11 +239,11 @@ fun DeliveryDashboardScreen(
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text("Next Delivery", fontWeight = FontWeight.Bold, color = TextDark)
+                                                Text(stringResource(R.string.next_delivery), fontWeight = FontWeight.Bold, color = TextDark)
                                                 StatusBadge(status = nextDelivery.order.status)
                                             }
                                             Spacer(modifier = Modifier.height(8.dp))
-                                            Text(nextDelivery.customer?.name ?: "Customer", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                            Text(nextDelivery.customer?.name ?: stringResource(R.string.customers), fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                             nextDelivery.customer?.address?.let {
                                                 Text(it, style = MaterialTheme.typography.bodySmall, color = TextMuted)
                                             }
@@ -249,7 +263,7 @@ fun DeliveryDashboardScreen(
                                                     onClick = { onDeliveryClick(nextDelivery.order.id) },
                                                     shape = RoundedCornerShape(10.dp)
                                                 ) {
-                                                    Text("View Delivery")
+                                                    Text(stringResource(R.string.view_delivery))
                                                 }
                                             }
                                         }
@@ -270,7 +284,7 @@ fun DeliveryDashboardScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column {
-                                            Text("Today's Collection", style = MaterialTheme.typography.bodySmall, color = Color(0xFF065F46))
+                                            Text(stringResource(R.string.todays_collection), style = MaterialTheme.typography.bodySmall, color = Color(0xFF065F46))
                                             Text(
                                                 "${String.format(java.util.Locale.US, "%,.0f", totalCollected)} DA",
                                                 style = MaterialTheme.typography.titleLarge,
@@ -319,7 +333,7 @@ fun DeliveryDashboardScreen(
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text("🚚", fontSize = 48.sp)
                                         Spacer(modifier = Modifier.height(12.dp))
-                                        Text("No deliveries found", fontWeight = FontWeight.Bold, color = TextDark)
+                                        Text(stringResource(R.string.no_deliveries_found), fontWeight = FontWeight.Bold, color = TextDark)
                                     }
                                 }
                             }
@@ -341,8 +355,8 @@ fun DeliveryDashboardScreen(
     if (orderToDelete != null) {
         AlertDialog(
             onDismissRequest = { orderToDelete = null },
-            title = { Text("Delete Delivery Order") },
-            text = { Text("Are you sure you want to permanently delete this delivery order?") },
+            title = { Text(stringResource(R.string.delete_delivery_title)) },
+            text = { Text(stringResource(R.string.delete_delivery_confirm)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -351,11 +365,11 @@ fun DeliveryDashboardScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = StatusError)
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { orderToDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { orderToDelete = null }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -393,11 +407,12 @@ fun DeliveryCardModern(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Text(delivery.customer?.name ?: "Customer", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextDark)
+            Text(delivery.customer?.name ?: stringResource(R.string.customers), fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextDark)
             
             delivery.driver?.let { driver ->
+                val driverName = listOfNotNull(driver.first_name, driver.last_name).joinToString(" ").ifBlank { driver.email ?: "" }
                 Text(
-                    "Driver: ${listOfNotNull(driver.first_name, driver.last_name).joinToString(" ").ifBlank { driver.email }}",
+                    stringResource(R.string.driver_label, driverName),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextMuted
                 )
@@ -413,7 +428,7 @@ fun DeliveryCardModern(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "${delivery.items.size} Products",
+                    stringResource(R.string.x_products, delivery.items.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextMuted
                 )
@@ -439,9 +454,9 @@ private fun DriverStatItem(count: String, label: String, color: Color) {
 @Composable
 private fun StatusBadge(status: String) {
     val (bgColor, textColor, label) = when (status) {
-        "DELIVERED" -> Triple(StatusSuccessContainer, StatusSuccess, "Delivered")
-        "OUT_FOR_DELIVERY" -> Triple(StatusWarningContainer, StatusWarning, "Out for Delivery")
-        "ASSIGNED" -> Triple(PrimaryBlueContainer, PrimaryBlue, "Assigned")
+        "DELIVERED" -> Triple(StatusSuccessContainer, StatusSuccess, stringResource(R.string.delivered))
+        "OUT_FOR_DELIVERY" -> Triple(StatusWarningContainer, StatusWarning, stringResource(R.string.out_for_delivery))
+        "ASSIGNED" -> Triple(PrimaryBlueContainer, PrimaryBlue, stringResource(R.string.assigned))
         else -> Triple(CardSurfaceVariant, TextMuted, status)
     }
 

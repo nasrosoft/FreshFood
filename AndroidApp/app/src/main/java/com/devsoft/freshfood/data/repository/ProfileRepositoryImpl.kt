@@ -18,16 +18,24 @@ class ProfileRepositoryImpl(
     private val supabase: SupabaseClient
 ) : ProfileRepository {
     override fun getProfilesByRole(role: String): Flow<List<Profile>> = flow {
-        val profiles = supabase.postgrest["profiles"]
-            .select { filter { eq("role", role) } }
-            .decodeList<Profile>()
-        emit(profiles)
+        try {
+            val profiles = supabase.postgrest["profiles"]
+                .select { filter { eq("role", role) } }
+                .decodeList<Profile>()
+            emit(profiles)
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
     }
 
     override suspend fun getProfileById(id: String): Profile? {
-        return supabase.postgrest["profiles"]
-            .select { filter { eq("id", id) } }
-            .decodeSingleOrNull<Profile>()
+        return try {
+            supabase.postgrest["profiles"]
+                .select { filter { eq("id", id) } }
+                .decodeSingleOrNull<Profile>()
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override suspend fun createDeliveryUser(email: String, password: String, firstName: String, lastName: String): Result<String> {
@@ -53,14 +61,22 @@ class ProfileRepositoryImpl(
     }
 
     override suspend fun updateProfile(profile: Profile) {
-        supabase.postgrest["profiles"].update(profile) {
-            filter { eq("id", profile.id) }
+        try {
+            supabase.postgrest["profiles"].update(profile) {
+                filter { eq("id", profile.id) }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     override suspend fun deleteProfile(id: String) {
-        supabase.postgrest["profiles"].delete {
-            filter { eq("id", id) }
+        try {
+            supabase.postgrest["profiles"].delete {
+                filter { eq("id", id) }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

@@ -39,6 +39,7 @@
     <string name="week">Week</string>
     <string name="month">Month</string>
     <string name="all_time">All Time</string>
+    <string name="all">All</string>
     <string name="customer_credit">Customer Credit</string>
     <string name="low_stock">Low Stock</string>
     <string name="overview">Overview</string>
@@ -91,4 +92,22 @@
     <string name="call_now">Call Now</string>
     <string name="refresh_status">Refresh Status</string>
     <string name="checking_status">Checking status...</string>
+
+    <!-- Driver Dashboard -->
+    <string name="driver_home">Driver Home</string>
+    <string name="good_morning_driver">Good morning, Driver 👋</string>
+    <string name="out_for_delivery">Out for Delivery</string>
+    <string name="delivered">Delivered</string>
+    <string name="assigned">Assigned</string>
+    <string name="next_delivery">Next Delivery</string>
+    <string name="view_delivery">View Delivery</string>
+    <string name="todays_collection">Today\'s Collection</string>
+    <string name="no_deliveries_found">No deliveries found</string>
+    <string name="driver_label">Driver: %s</string>
+    <string name="x_products">%d Products</string>
+    <string name="home">Home</string>
+    <string name="profile">Profile</string>
+    <string name="delete_delivery_title">Delete Delivery Order</string>
+    <string name="delete_delivery_confirm">Are you sure you want to permanently delete this delivery order?</string>
+    <string name="delete">Delete</string>
 </resources>
