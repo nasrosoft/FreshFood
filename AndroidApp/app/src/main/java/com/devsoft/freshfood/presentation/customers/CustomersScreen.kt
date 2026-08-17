@@ -18,10 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.devsoft.freshfood.R
 import com.devsoft.freshfood.domain.model.Customer
 import com.devsoft.freshfood.ui.theme.*
 
@@ -57,14 +59,19 @@ fun CustomersScreen(
                                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = PrimaryBlueDark)
                             }
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Customers", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text(
+                                stringResource(R.string.customers), 
+                                style = MaterialTheme.typography.titleLarge, 
+                                fontWeight = FontWeight.Bold, 
+                                color = TextDark
+                            )
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(onClick = onAddCustomerClick) {
-                                Icon(Icons.Filled.Add, contentDescription = "Add Customer", tint = PrimaryBlue)
+                                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add), tint = PrimaryBlue)
                             }
                         }
                     }
@@ -76,7 +83,9 @@ fun CustomersScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
-                        placeholder = { Text("Search customers by name or phone...", color = TextMuted, fontSize = 14.sp) },
+                        placeholder = { 
+                            Text(stringResource(R.string.search_customers_placeholder), color = TextMuted, fontSize = 14.sp) 
+                        },
                         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -100,7 +109,7 @@ fun CustomersScreen(
                 is CustomersUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Error: ${(uiState as CustomersUiState.Error).message}",
+                            text = (uiState as CustomersUiState.Error).message,
                             color = StatusError
                         )
                     }
@@ -116,8 +125,17 @@ fun CustomersScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("👥", fontSize = 48.sp)
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text("No customers found", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
-                                Text("Tap (+) to add a new customer", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                                Text(
+                                    stringResource(R.string.no_customers_found), 
+                                    style = MaterialTheme.typography.titleMedium, 
+                                    fontWeight = FontWeight.Bold, 
+                                    color = TextDark
+                                )
+                                Text(
+                                    stringResource(R.string.tap_to_add_customer), 
+                                    style = MaterialTheme.typography.bodySmall, 
+                                    color = TextMuted
+                                )
                             }
                         }
                     } else {
@@ -151,7 +169,7 @@ fun CustomersScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Customer Detail", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.customer_details), fontWeight = FontWeight.Bold)
                     IconButton(onClick = { selectedCustomerForDetail = null }) {
                         Icon(Icons.Filled.Close, contentDescription = "Close")
                     }
@@ -189,7 +207,7 @@ fun CustomersScreen(
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text(
-                                "Current Credit", 
+                                stringResource(R.string.current_credit_label), 
                                 style = MaterialTheme.typography.bodySmall, 
                                 color = if (customer.current_credit > 0) Color(0xFF92400E) else Color(0xFF065F46)
                             )
@@ -203,50 +221,55 @@ fun CustomersScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            selectedCustomerForPayment = customer
-                            selectedCustomerForDetail = null
-                        },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("+ Receive Payment")
+                    if (customer.current_credit > 0) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                selectedCustomerForPayment = customer
+                                selectedCustomerForDetail = null
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Icon(Icons.Filled.CheckCircle, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.receive_payment), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { selectedCustomerForDetail = null }) { Text("Close") }
+                TextButton(onClick = { selectedCustomerForDetail = null }) { 
+                    Text(stringResource(R.string.close)) 
+                }
             }
         )
     }
 
     // -------------------------------------------------------------
-    // RECEIVE PAYMENT DIALOG (matching reference design)
+    // RECEIVE PAYMENT DIALOG (CASH ONLY)
     // -------------------------------------------------------------
     if (selectedCustomerForPayment != null) {
         val customer = selectedCustomerForPayment!!
         var paymentAmount by remember { mutableStateOf("") }
-        var paymentMethod by remember { mutableStateOf("Cash") }
         val amount = paymentAmount.toDoubleOrNull() ?: 0.0
         val remaining = (customer.current_credit - amount).coerceAtLeast(0.0)
 
         AlertDialog(
             onDismissRequest = { selectedCustomerForPayment = null },
-            title = { Text("Receive Payment", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.receive_payment), fontWeight = FontWeight.Bold) },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text("Customer: ${customer.name}", fontWeight = FontWeight.Bold, color = TextDark)
+                    Text("${customer.name}", fontWeight = FontWeight.Bold, color = TextDark)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Current Credit", color = TextMuted)
-                        Text("${customer.current_credit} DA", fontWeight = FontWeight.Bold, color = StatusWarning)
+                        Text(stringResource(R.string.current_credit_label), color = TextMuted)
+                        Text("${String.format(java.util.Locale.US, "%,.0f", customer.current_credit)} DA", fontWeight = FontWeight.Bold, color = StatusWarning)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -254,7 +277,7 @@ fun CustomersScreen(
                     OutlinedTextField(
                         value = paymentAmount,
                         onValueChange = { paymentAmount = it },
-                        label = { Text("Payment Amount (DA)") },
+                        label = { Text(stringResource(R.string.payment_amount_da)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -266,33 +289,32 @@ fun CustomersScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Remaining Credit", color = TextMuted)
+                        Text(stringResource(R.string.remaining_credit_label), color = TextMuted)
                         Text("${String.format(java.util.Locale.US, "%,.0f", remaining)} DA", fontWeight = FontWeight.Bold, color = if (remaining > 0) StatusWarning else StatusSuccess)
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    Text("Payment Method", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = TextDark)
+                    Text(stringResource(R.string.payment_method), fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = TextDark)
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Cash", "Bank", "Card").forEach { method ->
-                            val isSelected = paymentMethod == method
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) PrimaryBlue else CardSurfaceVariant)
-                                    .clickable { paymentMethod = method }
-                                    .padding(vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    method,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = if (isSelected) Color.White else TextMuted
-                                )
-                            }
+                    // ONLY CASH PAYMENT
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = PrimaryBlueContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("💵", fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.cash_payment),
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryBlueDark,
+                                fontSize = 13.sp
+                            )
                         }
                     }
                 }
@@ -307,11 +329,13 @@ fun CustomersScreen(
                     },
                     enabled = amount > 0
                 ) {
-                    Text("Confirm Payment")
+                    Text(stringResource(R.string.confirm_payment))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selectedCustomerForPayment = null }) { Text("Cancel") }
+                TextButton(onClick = { selectedCustomerForPayment = null }) { 
+                    Text(stringResource(R.string.cancel)) 
+                }
             }
         )
     }
@@ -359,10 +383,10 @@ fun CustomerCardModern(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .background(if (hasCredit) StatusWarningContainer else StatusSuccessContainer)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    if (hasCredit) "Credit: ${customer.current_credit} DA" else "Paid",
+                    if (hasCredit) stringResource(R.string.credit_badge, String.format(java.util.Locale.US, "%,.0f", customer.current_credit)) else stringResource(R.string.paid_badge),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (hasCredit) StatusWarning else StatusSuccess

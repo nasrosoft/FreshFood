@@ -12,8 +12,8 @@
     <string name="purchase_entry">إدخال المشتريات</string>
     <string name="users_drivers">المستخدمين / السائقين</string>
     <string name="deliveries">التوصيلات</string>
-    <string name="parametrage">الإعدادات / Paramétrage</string>
-    <string name="language">اللغة / Langue / Language</string>
+    <string name="parametrage">الإعدادات</string>
+    <string name="language">اللغة</string>
     <string name="logout">تسجيل الخروج</string>
     <string name="admin_role">المدير</string>
     <string name="delivery_role">عامل التوصيل</string>
@@ -110,4 +110,34 @@
     <string name="delete_delivery_title">حذف طلب التوصيل</string>
     <string name="delete_delivery_confirm">هل أنت متأكد من رغبتك في حذف طلب التوصيل هذا نهائياً؟</string>
     <string name="delete">حذف</string>
+
+    <!-- Products & Customers Screen -->
+    <string name="search_products_placeholder">ابحث بالاسم أو الباركود...</string>
+    <string name="expiring">يقترب الانتهاء</string>
+    <string name="expired">منتهي الصلاحية</string>
+    <string name="no_products_found">لا توجد منتجات</string>
+    <string name="product_details">تفاصيل المنتج</string>
+    <string name="current_stock_label">المخزون الحالي</string>
+    <string name="purchase_price_label">سعر الشراء</string>
+    <string name="selling_price_label">سعر البيع</string>
+    <string name="edit_product">تعديل المنتج</string>
+    <string name="add_stock">إضافة مخزون</string>
+    <string name="search_customers_placeholder">ابحث عن زبون بالاسم أو الهاتف...</string>
+    <string name="no_customers_found">لا يوجد زبائن</string>
+    <string name="tap_to_add_customer">اضغط (+) لإضافة زبون جديد</string>
+    <string name="customer_details">تفاصيل الزبون</string>
+    <string name="receive_payment">استلام دفعة</string>
+    <string name="current_credit_label">الدين الحالي</string>
+    <string name="payment_amount_da">مبلغ الدفع (دج)</string>
+    <string name="remaining_credit_label">الدين المتبقي</string>
+    <string name="confirm_payment">تأكيد الدفع</string>
+    <string name="credit_badge">دين : %s دج</string>
+    <string name="paid_badge">خالص</string>
+    <string name="guest_customer">زبون عادي (بدون حساب)</string>
+    <string name="assign_driver_title">تعيين سائق توصيل</string>
+    <string name="proceed_to_payment">الانتقال للدفع</string>
+    <string name="select_payment_method">طريقة الدفع</string>
+    <string name="cash_payment">نقداً (Cash)</string>
+    <string name="credit_payment">دين على الزبون (Crédit)</string>
+    <string name="confirm_and_checkout">تأكيد وإتمام البيع</string>
 </resources>

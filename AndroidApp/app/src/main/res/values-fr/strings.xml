@@ -13,7 +13,7 @@
     <string name="users_drivers">Utilisateurs / Livreurs</string>
     <string name="deliveries">Livraisons</string>
     <string name="parametrage">Paramétrage</string>
-    <string name="language">Langue / اللغة / Language</string>
+    <string name="language">Langue</string>
     <string name="logout">Déconnexion</string>
     <string name="admin_role">ADMINISTRATEUR</string>
     <string name="delivery_role">LIVREUR</string>
@@ -110,4 +110,34 @@
     <string name="delete_delivery_title">Supprimer la commande de livraison</string>
     <string name="delete_delivery_confirm">Êtes-vous sûr de vouloir supprimer définitivement cette livraison ?</string>
     <string name="delete">Supprimer</string>
+
+    <!-- Products & Customers Screen -->
+    <string name="search_products_placeholder">Rechercher par nom ou code-barres...</string>
+    <string name="expiring">Expire bientôt</string>
+    <string name="expired">Expiré</string>
+    <string name="no_products_found">Aucun produit trouvé</string>
+    <string name="product_details">Détails du Produit</string>
+    <string name="current_stock_label">Stock Actuel</string>
+    <string name="purchase_price_label">Prix d\'Achat</string>
+    <string name="selling_price_label">Prix de Vente</string>
+    <string name="edit_product">Modifier le produit</string>
+    <string name="add_stock">Ajouter du stock</string>
+    <string name="search_customers_placeholder">Rechercher par nom ou téléphone...</string>
+    <string name="no_customers_found">Aucun client trouvé</string>
+    <string name="tap_to_add_customer">Touchez (+) pour ajouter un client</string>
+    <string name="customer_details">Détails du Client</string>
+    <string name="receive_payment">Recevoir un paiement</string>
+    <string name="current_credit_label">Crédit actuel</string>
+    <string name="payment_amount_da">Montant du paiement (DA)</string>
+    <string name="remaining_credit_label">Crédit restant</string>
+    <string name="confirm_payment">Confirmer le paiement</string>
+    <string name="credit_badge">Crédit : %s DA</string>
+    <string name="paid_badge">Payé</string>
+    <string name="guest_customer">Client comptoir (Sans compte)</string>
+    <string name="assign_driver_title">Assigner un Livreur</string>
+    <string name="proceed_to_payment">Passer au paiement</string>
+    <string name="select_payment_method">Mode de Paiement</string>
+    <string name="cash_payment">Espèces (Cash)</string>
+    <string name="credit_payment">Crédit Client</string>
+    <string name="confirm_and_checkout">Confirmer et Encaisser</string>
 </resources>

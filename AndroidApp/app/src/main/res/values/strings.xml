@@ -12,8 +12,8 @@
     <string name="purchase_entry">Purchase Entry</string>
     <string name="users_drivers">Users / Drivers</string>
     <string name="deliveries">Deliveries</string>
-    <string name="parametrage">Settings / Paramétrage</string>
-    <string name="language">Language / اللغة / Langue</string>
+    <string name="parametrage">Settings</string>
+    <string name="language">Language</string>
     <string name="logout">Log out</string>
     <string name="admin_role">ADMIN</string>
     <string name="delivery_role">DELIVERY</string>
@@ -110,4 +110,34 @@
     <string name="delete_delivery_title">Delete Delivery Order</string>
     <string name="delete_delivery_confirm">Are you sure you want to permanently delete this delivery order?</string>
     <string name="delete">Delete</string>
+
+    <!-- Products & Customers Screen -->
+    <string name="search_products_placeholder">Search products by name or barcode...</string>
+    <string name="expiring">Expiring</string>
+    <string name="expired">Expired</string>
+    <string name="no_products_found">No products found</string>
+    <string name="product_details">Product Details</string>
+    <string name="current_stock_label">Current Stock</string>
+    <string name="purchase_price_label">Purchase Price</string>
+    <string name="selling_price_label">Selling Price</string>
+    <string name="edit_product">Edit Product</string>
+    <string name="add_stock">Add Stock</string>
+    <string name="search_customers_placeholder">Search customers by name or phone...</string>
+    <string name="no_customers_found">No customers found</string>
+    <string name="tap_to_add_customer">Tap (+) to add a new customer</string>
+    <string name="customer_details">Customer Details</string>
+    <string name="receive_payment">Receive Payment</string>
+    <string name="current_credit_label">Current Credit</string>
+    <string name="payment_amount_da">Payment Amount (DA)</string>
+    <string name="remaining_credit_label">Remaining Credit</string>
+    <string name="confirm_payment">Confirm Payment</string>
+    <string name="credit_badge">Credit: %s DA</string>
+    <string name="paid_badge">Paid</string>
+    <string name="guest_customer">Guest (No Customer)</string>
+    <string name="assign_driver_title">Assign Delivery Driver</string>
+    <string name="proceed_to_payment">Proceed to Payment</string>
+    <string name="select_payment_method">Select Payment Method</string>
+    <string name="cash_payment">Cash (Espèces)</string>
+    <string name="credit_payment">Customer Credit (Crédit)</string>
+    <string name="confirm_and_checkout">Confirm &amp; Checkout</string>
 </resources>

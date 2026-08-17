@@ -20,22 +20,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.devsoft.freshfood.R
 import com.devsoft.freshfood.domain.model.Product
 import com.devsoft.freshfood.presentation.components.BarcodeScannerScreen
 import com.devsoft.freshfood.presentation.components.ProductImageView
 import com.devsoft.freshfood.ui.theme.*
 
-enum class ProductFilter(val label: String) {
-    ALL("All"),
-    LOW_STOCK("Low Stock"),
-    EXPIRING("Expiring"),
-    EXPIRED("Expired")
+enum class ProductFilter(val stringRes: Int) {
+    ALL(R.string.all),
+    LOW_STOCK(R.string.low_stock),
+    EXPIRING(R.string.expiring),
+    EXPIRED(R.string.expired)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,7 +121,7 @@ fun ProductListScreen(
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                "Products",
+                                stringResource(R.string.products),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = TextDark
@@ -130,7 +132,7 @@ fun ProductListScreen(
                             com.devsoft.freshfood.presentation.components.GlobalSyncButton()
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(onClick = { onAddProductClick(null) }) {
-                                Icon(Icons.Filled.Add, contentDescription = "Add Product", tint = PrimaryBlue)
+                                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add), tint = PrimaryBlue)
                             }
                         }
                     }
@@ -139,7 +141,7 @@ fun ProductListScreen(
                     OutlinedTextField(
                         value = uiState.searchQuery,
                         onValueChange = { viewModel.updateSearchQuery(it) },
-                        placeholder = { Text("Search products by name or barcode...", color = TextMuted, fontSize = 14.sp) },
+                        placeholder = { Text(stringResource(R.string.search_products_placeholder), color = TextMuted, fontSize = 14.sp) },
                         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
                         trailingIcon = {
                             IconButton(onClick = { showScanner = true }) {
@@ -179,7 +181,7 @@ fun ProductListScreen(
                                     .padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
                                 Text(
-                                    filter.label,
+                                    stringResource(filter.stringRes),
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (isSelected) Color.White else TextMuted,
@@ -206,8 +208,7 @@ fun ProductListScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("📦", fontSize = 48.sp)
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("No products found", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
-                        Text("Try searching or add a new product", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                        Text(stringResource(R.string.no_products_found), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
                     }
                 }
             } else {
@@ -245,7 +246,7 @@ fun ProductListScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Product Detail", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.product_details), fontWeight = FontWeight.Bold)
                     IconButton(onClick = { selectedProductForDetail = null }) {
                         Icon(Icons.Filled.Close, contentDescription = "Close")
                     }
@@ -282,9 +283,9 @@ fun ProductListScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
-                            DetailRow("Selling Price", "${product.selling_price} DA", FontWeight.Bold)
+                            DetailRow(stringResource(R.string.selling_price_label), "${product.selling_price} DA", FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
-                            DetailRow("Purchase Cost", "${product.purchase_price} DA", FontWeight.Normal)
+                            DetailRow(stringResource(R.string.purchase_price_label), "${product.purchase_price} DA", FontWeight.Normal)
                             Spacer(modifier = Modifier.height(4.dp))
                             DetailRow("Profit / Unit", "${String.format(java.util.Locale.US, "%.1f", profitUnit)} DA", FontWeight.SemiBold, StatusSuccess)
                             Spacer(modifier = Modifier.height(4.dp))
@@ -306,7 +307,7 @@ fun ProductListScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Available Stock", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                                Text(stringResource(R.string.current_stock_label), style = MaterialTheme.typography.bodySmall, color = TextMuted)
                                 Text("${product.current_stock} ${product.unit}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             }
                             Button(
@@ -316,7 +317,7 @@ fun ProductListScreen(
                                 },
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Text("+ Add Stock")
+                                Text(stringResource(R.string.add_stock))
                             }
                         }
                     }
@@ -327,11 +328,13 @@ fun ProductListScreen(
                     selectedProductForEdit = product
                     selectedProductForDetail = null
                 }) {
-                    Text("Edit Product")
+                    Text(stringResource(R.string.edit_product))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selectedProductForDetail = null }) { Text("Close") }
+                TextButton(onClick = { selectedProductForDetail = null }) { 
+                    Text(stringResource(R.string.close)) 
+                }
             }
         )
     }
@@ -342,7 +345,7 @@ fun ProductListScreen(
     if (selectedProductForStock != null) {
         AlertDialog(
             onDismissRequest = { selectedProductForStock = null },
-            title = { Text("Add Stock: ${selectedProductForStock?.name}") },
+            title = { Text("${stringResource(R.string.add_stock)}: ${selectedProductForStock?.name}") },
             text = {
                 Column {
                     OutlinedTextField(
@@ -371,11 +374,13 @@ fun ProductListScreen(
                     stockQuantity = ""
                     stockExpiration = ""
                 }) {
-                    Text("Add")
+                    Text(stringResource(R.string.add))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selectedProductForStock = null }) { Text("Cancel") }
+                TextButton(onClick = { selectedProductForStock = null }) { 
+                    Text(stringResource(R.string.cancel)) 
+                }
             }
         )
     }
@@ -386,7 +391,7 @@ fun ProductListScreen(
     if (selectedProductForEdit != null) {
         AlertDialog(
             onDismissRequest = { selectedProductForEdit = null },
-            title = { Text("Edit Product") },
+            title = { Text(stringResource(R.string.edit_product)) },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     OutlinedTextField(
@@ -406,7 +411,7 @@ fun ProductListScreen(
                     OutlinedTextField(
                         value = editPurchasePrice,
                         onValueChange = { editPurchasePrice = it },
-                        label = { Text("Purchase Price (DA)") },
+                        label = { Text(stringResource(R.string.purchase_price_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
@@ -414,7 +419,7 @@ fun ProductListScreen(
                     OutlinedTextField(
                         value = editSellingPrice,
                         onValueChange = { editSellingPrice = it },
-                        label = { Text("Selling Price (DA)") },
+                        label = { Text(stringResource(R.string.selling_price_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
@@ -422,7 +427,7 @@ fun ProductListScreen(
                     OutlinedTextField(
                         value = editStock,
                         onValueChange = { editStock = it },
-                        label = { Text("Stock Quantity") },
+                        label = { Text(stringResource(R.string.current_stock_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
@@ -440,11 +445,13 @@ fun ProductListScreen(
                     viewModel.updateProduct(updatedProduct)
                     selectedProductForEdit = null
                 }) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selectedProductForEdit = null }) { Text("Cancel") }
+                TextButton(onClick = { selectedProductForEdit = null }) { 
+                    Text(stringResource(R.string.cancel)) 
+                }
             }
         )
     }
@@ -514,7 +521,7 @@ fun ProductGridCard(
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = if (isLowStock) "Stock: ${product.current_stock} Low" else "Stock: ${product.current_stock}",
+                    text = stringResource(R.string.stock_label, product.current_stock),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (isLowStock) StatusWarning else StatusSuccess

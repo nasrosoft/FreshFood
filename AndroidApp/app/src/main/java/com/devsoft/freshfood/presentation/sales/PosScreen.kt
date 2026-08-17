@@ -501,7 +501,7 @@ fun PosScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Total", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text(stringResource(R.string.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
                         Text("${String.format(java.util.Locale.US, "%,.0f", total)} DA", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PrimaryBlue)
                     }
 
@@ -513,7 +513,7 @@ fun PosScreen(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth().height(50.dp)
                     ) {
-                        Text("Proceed to Payment", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.proceed_to_payment), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -526,7 +526,7 @@ fun PosScreen(
     if (showPaymentMethodDialog) {
         AlertDialog(
             onDismissRequest = { showPaymentMethodDialog = false },
-            title = { Text("Select Payment Method", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.select_payment_method), fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Row(
@@ -538,7 +538,7 @@ fun PosScreen(
                     ) {
                         RadioButton(selected = selectedPaymentMethod == "CASH", onClick = { selectedPaymentMethod = "CASH" })
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Cash (Espèces)", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.cash_payment), fontWeight = FontWeight.Bold)
                     }
                     Row(
                         modifier = Modifier
@@ -549,7 +549,7 @@ fun PosScreen(
                     ) {
                         RadioButton(selected = selectedPaymentMethod == "CREDIT", onClick = { selectedPaymentMethod = "CREDIT" })
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Customer Credit (Crédit)", fontWeight = FontWeight.Bold, color = StatusWarning)
+                        Text(stringResource(R.string.credit_payment), fontWeight = FontWeight.Bold, color = StatusWarning)
                     }
                 }
             },
@@ -558,11 +558,13 @@ fun PosScreen(
                     showPaymentMethodDialog = false
                     viewModel.checkout(selectedPaymentMethod, selectedCustomer?.id, createDelivery, selectedDriver?.id)
                 }) {
-                    Text("Confirm & Checkout")
+                    Text(stringResource(R.string.confirm_and_checkout))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPaymentMethodDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showPaymentMethodDialog = false }) { 
+                    Text(stringResource(R.string.cancel)) 
+                }
             }
         )
     }
@@ -571,14 +573,14 @@ fun PosScreen(
     if (showCustomerDialog) {
         AlertDialog(
             onDismissRequest = { showCustomerDialog = false },
-            title = { Text("Select Customer", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.select_customer), fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = customerSearchQuery,
                         onValueChange = { customerSearchQuery = it },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        placeholder = { Text("Search by name...") },
+                        placeholder = { Text(stringResource(R.string.search_customers_placeholder)) },
                         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
                         singleLine = true
                     )
@@ -592,7 +594,7 @@ fun PosScreen(
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Guest (No Customer)")
+                                Text(stringResource(R.string.guest_customer))
                             }
                         }
                         if (customersState is CustomersUiState.Success) {
@@ -616,7 +618,7 @@ fun PosScreen(
                                     ) {
                                         Text(cust.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                         if (cust.current_credit > 0) {
-                                            Text("Credit: ${cust.current_credit} DA", fontSize = 11.sp, color = StatusWarning)
+                                            Text(stringResource(R.string.credit_badge, String.format(java.util.Locale.US, "%,.0f", cust.current_credit)), fontSize = 11.sp, color = StatusWarning)
                                         }
                                     }
                                 }
@@ -626,7 +628,9 @@ fun PosScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showCustomerDialog = false }) { Text("Close") }
+                TextButton(onClick = { showCustomerDialog = false }) { 
+                    Text(stringResource(R.string.close)) 
+                }
             }
         )
     }
@@ -635,7 +639,7 @@ fun PosScreen(
     if (showDriverDialog) {
         AlertDialog(
             onDismissRequest = { showDriverDialog = false },
-            title = { Text("Assign Delivery Driver", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.assign_driver_title), fontWeight = FontWeight.Bold) },
             text = {
                 LazyColumn(modifier = Modifier.heightIn(max = 280.dp)) {
                     items(uiState.deliveryDrivers) { driver: Profile ->
@@ -662,7 +666,9 @@ fun PosScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDriverDialog = false }) { Text("Close") }
+                TextButton(onClick = { showDriverDialog = false }) { 
+                    Text(stringResource(R.string.close)) 
+                }
             }
         )
     }
