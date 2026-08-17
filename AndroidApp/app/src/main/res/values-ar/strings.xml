@@ -81,6 +81,10 @@
     <string name="search">بحث</string>
     <string name="add">إضافة</string>
     <string name="save_to_supabase">حفظ في قاعدة البيانات</string>
-    <string name="camera_permission_required">إذن الكاميرا مطلوب</string>
-    <string name="grant_permission">منح الإذن</string>
+    <!-- Payment Required & Activation -->
+    <string name="payment_required">الدفع مطلوب</string>
+    <string name="payment_required_desc">تم تعليق الوصول إلى تطبيقك مؤقتاً لعدم تسديد الفواتير. يرجى الاتصال بالإدارة بعد إتمام عملية الدفع.</string>
+    <string name="payment_tell">الهاتف : 06 60 61 29 41 / 05 49 74 03 36</string>
+    <string name="refresh_status">تحديث الحالة</string>
+    <string name="checking_status">جاري التحقق من الحالة...</string>
 </resources>

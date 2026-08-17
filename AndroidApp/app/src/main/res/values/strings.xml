@@ -81,6 +81,10 @@
     <string name="search">Search</string>
     <string name="add">Add</string>
     <string name="save_to_supabase">Save to Supabase</string>
-    <string name="camera_permission_required">Camera Permission Required</string>
-    <string name="grant_permission">Grant Permission</string>
+    <!-- Payment Required & Activation -->
+    <string name="payment_required">Payment Required</string>
+    <string name="payment_required_desc">Your application access is temporarily suspended because your bills have not been paid. Please contact the administrator after completing your payment.</string>
+    <string name="payment_tell">Tel : 06 60 61 29 41 / 05 49 74 03 36</string>
+    <string name="refresh_status">Refresh Status</string>
+    <string name="checking_status">Checking status...</string>
 </resources>

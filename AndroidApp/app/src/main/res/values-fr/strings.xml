@@ -81,6 +81,10 @@
     <string name="search">Rechercher</string>
     <string name="add">Ajouter</string>
     <string name="save_to_supabase">Enregistrer sur Supabase</string>
-    <string name="camera_permission_required">Autorisation caméra requise</string>
-    <string name="grant_permission">Accorder l\'autorisation</string>
+    <!-- Payment Required & Activation -->
+    <string name="payment_required">Paiement requis</string>
+    <string name="payment_required_desc">L’accès à votre application est temporairement suspendu car vos factures n’ont pas été réglées. Veuillez contacter l’administrateur après avoir effectué votre paiement.</string>
+    <string name="payment_tell">Tell : 06 60 61 29 41 / 05 49 74 03 36</string>
+    <string name="refresh_status">Actualiser le statut</string>
+    <string name="checking_status">Vérification du statut...</string>
 </resources>
