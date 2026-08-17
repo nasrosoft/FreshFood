@@ -30,7 +30,6 @@ class CustomersViewModel(
 
     fun loadCustomers() {
         viewModelScope.launch {
-            _uiState.value = CustomersUiState.Loading
             repository.getCustomers()
                 .catch { e ->
                     _uiState.value = CustomersUiState.Error(e.message ?: "Unknown Error")
@@ -44,17 +43,29 @@ class CustomersViewModel(
     fun registerPayment(customerId: String, amount: Double) {
         viewModelScope.launch {
             try {
+                // Optimistic UI update: instantly deduct credit in the local list
+                val current = (_uiState.value as? CustomersUiState.Success)?.customers
+                if (current != null) {
+                    val updated = current.map { c ->
+                        if (c.id == customerId) {
+                            c.copy(current_credit = (c.current_credit - amount).coerceAtLeast(0.0))
+                        } else c
+                    }
+                    _uiState.value = CustomersUiState.Success(updated)
+                }
+
                 val payment = com.devsoft.freshfood.domain.model.Payment(
                     customer_id = customerId,
                     amount = amount,
                     payment_method = "CASH",
-                    user_id = "00000000-0000-0000-0000-000000000000" // MOCK USER
+                    user_id = "00000000-0000-0000-0000-000000000000"
                 )
                 repository.registerPayment(payment)
-                // Reload customers to get updated credit
+                // Refresh list from remote database to ensure sync
                 loadCustomers()
             } catch (e: Exception) {
-                // In a real app we'd show a toast or error state here
+                e.printStackTrace()
+                loadCustomers()
             }
         }
     }

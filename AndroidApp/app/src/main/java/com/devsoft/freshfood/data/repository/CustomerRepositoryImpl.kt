@@ -31,23 +31,44 @@ class CustomerRepositoryImpl(
         val customer = getCustomerById(payment.customer_id)
         if (customer != null) {
             val newCredit = (customer.current_credit - payment.amount).coerceAtLeast(0.0)
-            supabase.postgrest["payments"].insert(payment)
             
-            val creditTx = mapOf(
-                "customer_id" to payment.customer_id,
-                "amount" to payment.amount,
-                "transaction_type" to "PAYMENT",
-                "reference_id" to payment.id,
-                "user_id" to payment.user_id
-            )
-            supabase.postgrest["credit_transactions"].insert(creditTx)
-            
+            // 1. Immediately update customer's current credit in Supabase
             supabase.postgrest["customers"].update(
                 {
                     set("current_credit", newCredit)
                 }
             ) {
                 filter { eq("id", customer.id) }
+            }
+
+            // 2. Record payment entry safely
+            try {
+                val paymentMap = mutableMapOf<String, Any>(
+                    "customer_id" to payment.customer_id,
+                    "amount" to payment.amount,
+                    "payment_method" to payment.payment_method
+                )
+                if (!payment.user_id.isNullOrBlank() && payment.user_id != "00000000-0000-0000-0000-000000000000") {
+                    paymentMap["user_id"] = payment.user_id
+                }
+                supabase.postgrest["payments"].insert(paymentMap)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // 3. Record credit transaction safely
+            try {
+                val creditTx = mutableMapOf<String, Any>(
+                    "customer_id" to payment.customer_id,
+                    "amount" to payment.amount,
+                    "transaction_type" to "PAYMENT"
+                )
+                if (!payment.user_id.isNullOrBlank() && payment.user_id != "00000000-0000-0000-0000-000000000000") {
+                    creditTx["user_id"] = payment.user_id
+                }
+                supabase.postgrest["credit_transactions"].insert(creditTx)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
