@@ -23,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.devsoft.freshfood.data.image.OpenFoodFactsImageProvider
 import com.devsoft.freshfood.domain.model.Product
 import com.devsoft.freshfood.presentation.components.ProductImageView
 import com.devsoft.freshfood.presentation.products.ProductsViewModel
@@ -193,7 +192,6 @@ fun AddItemDialog(
     onAddNewProduct: (String, String?, String?, String?, String?) -> Product
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val imageProvider = remember { OpenFoodFactsImageProvider() }
 
     var barcode by remember { mutableStateOf("") }
     var productName by remember { mutableStateOf("") }
@@ -202,12 +200,8 @@ fun AddItemDialog(
     var isNewProductByBarcode by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
-    // Automatic Image & Emoji state
-    var autoImageUrl by remember { mutableStateOf<String?>(null) }
-    var autoImageSource by remember { mutableStateOf<String?>("emoji") }
+    // Emoji state
     var autoEmoji by remember { mutableStateOf("📦") }
-    var isSearchingImage by remember { mutableStateOf(false) }
-    var useEmojiOnly by remember { mutableStateOf(false) }
 
     var quantity by remember { mutableStateOf("10") }
     var purchasePrice by remember { mutableStateOf("0") }
@@ -215,14 +209,11 @@ fun AddItemDialog(
     var marginPercentage by remember { mutableStateOf("") }
     var expirationDate by remember { mutableStateOf("2026-12-31") }
 
-    // Debounced Automatic Product Image & Emoji Search
+    // Automatic Emoji Search
     LaunchedEffect(productName, barcode, selectedProduct) {
         if (selectedProduct != null) {
-            autoImageUrl = selectedProduct?.image_url
-            autoImageSource = selectedProduct?.image_source ?: if (autoImageUrl != null) "remote" else "emoji"
             autoEmoji = selectedProduct?.emoji?.takeIf { it.isNotBlank() }
                 ?: ProductCategoryEmojiResolver.resolveEmoji(selectedProduct?.name)
-            isSearchingImage = false
             return@LaunchedEffect
         }
 
@@ -230,29 +221,12 @@ fun AddItemDialog(
         val targetBarcode = barcode.trim().takeIf { it.isNotBlank() }
 
         if (targetName.isBlank() && targetBarcode.isNullOrBlank()) {
-            autoImageUrl = null
             autoEmoji = "📦"
-            isSearchingImage = false
             return@LaunchedEffect
         }
 
         // 1. Immediately resolve category emoji for instant UI responsiveness
         autoEmoji = ProductCategoryEmojiResolver.resolveEmoji(targetName)
-
-        // 2. Debounce before hitting remote image API
-        delay(600)
-
-        isSearchingImage = true
-        val result = imageProvider.searchProductImage(targetName, targetBarcode)
-        isSearchingImage = false
-
-        if (result != null) {
-            autoImageUrl = result.imageUrl
-            autoImageSource = result.source
-        } else {
-            autoImageUrl = null
-            autoImageSource = "emoji"
-        }
     }
 
     fun lookupBarcode(code: String) {
@@ -269,7 +243,6 @@ fun AddItemDialog(
                 barcode = found.barcode ?: clean
                 purchasePrice = found.purchase_price.toString()
                 sellingPrice = found.selling_price.toString()
-                autoImageUrl = found.image_url
                 autoEmoji = found.emoji ?: ProductCategoryEmojiResolver.resolveEmoji(found.name)
                 isNewProductByBarcode = false
                 expanded = false
@@ -400,7 +373,6 @@ fun AddItemDialog(
                                     }
                                     purchasePrice = product.purchase_price.toString()
                                     sellingPrice = product.selling_price.toString()
-                                    autoImageUrl = product.image_url
                                     autoEmoji = product.emoji ?: ProductCategoryEmojiResolver.resolveEmoji(product.name)
                                     isNewProductByBarcode = false
                                     expanded = false
@@ -423,7 +395,7 @@ fun AddItemDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             ProductImageView(
-                                imageUrl = if (useEmojiOnly) null else autoImageUrl,
+                                imageUrl = null,
                                 emoji = autoEmoji,
                                 productName = productName.ifBlank { selectedProduct?.name },
                                 size = 56.dp,
@@ -431,40 +403,11 @@ fun AddItemDialog(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                if (isSearchingImage) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Searching product image...", style = MaterialTheme.typography.bodySmall)
-                                    }
-                                } else if (!autoImageUrl.isNullOrBlank() && !useEmojiOnly) {
-                                    Text(
-                                        "✓ Product image found",
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                    Text(
-                                        "Switch to emoji $autoEmoji",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.secondary,
-                                        modifier = Modifier.clickable { useEmojiOnly = true }
-                                    )
-                                } else {
-                                    Text(
-                                        "Visual: $autoEmoji (Food Emoji)",
-                                        fontWeight = FontWeight.SemiBold,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                    if (!autoImageUrl.isNullOrBlank() && useEmojiOnly) {
-                                        Text(
-                                            "Use product photo",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.clickable { useEmojiOnly = false }
-                                        )
-                                    }
-                                }
+                                Text(
+                                    "Visual: $autoEmoji (Food Emoji)",
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
                         }
                     }
@@ -536,8 +479,6 @@ fun AddItemDialog(
                     if (productName.isBlank() || qty <= 0) return@Button
 
                     val currentBarcode = barcode.trim().takeIf { it.isNotBlank() }
-                    val finalImageUrl = if (useEmojiOnly) null else autoImageUrl
-                    val finalSource = if (finalImageUrl != null) (autoImageSource ?: "remote") else "emoji"
                     val finalEmoji = autoEmoji
 
                     if (selectedProduct != null) {
@@ -545,16 +486,16 @@ fun AddItemDialog(
                         if (targetProduct.barcode != currentBarcode && currentBarcode != null) {
                             targetProduct = targetProduct.copy(barcode = currentBarcode)
                         }
-                        if (targetProduct.image_url == null && finalImageUrl != null) {
-                            targetProduct = targetProduct.copy(image_url = finalImageUrl, image_source = finalSource, emoji = finalEmoji)
+                        if (targetProduct.image_url == null) {
+                            targetProduct = targetProduct.copy(image_url = null, image_source = "emoji", emoji = finalEmoji)
                         }
                         onAdd(targetProduct, qty, pPrice, sPrice, expirationDate)
                     } else {
                         val newProduct = onAddNewProduct(
                             productName.trim(), 
                             currentBarcode, 
-                            finalImageUrl, 
-                            finalSource, 
+                            null, 
+                            "emoji", 
                             finalEmoji
                         )
                         onAdd(newProduct, qty, pPrice, sPrice, expirationDate)

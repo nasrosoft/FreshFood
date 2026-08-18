@@ -15,11 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.devsoft.freshfood.data.image.OpenFoodFactsImageProvider
 import com.devsoft.freshfood.domain.model.Product
 import com.devsoft.freshfood.presentation.components.ProductImageView
 import com.devsoft.freshfood.utils.ProductCategoryEmojiResolver
-import kotlinx.coroutines.delay
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,46 +27,25 @@ fun AddProductScreen(
     initialBarcode: String? = null,
     onBack: () -> Unit
 ) {
-    val imageProvider = remember { OpenFoodFactsImageProvider() }
-
     var name by remember { mutableStateOf("") }
     var sku by remember { mutableStateOf(initialBarcode ?: "") }
     var sellPrice by remember { mutableStateOf("") }
     var costPrice by remember { mutableStateOf("") }
     var currentStock by remember { mutableStateOf("") }
 
-    // Automatic Image & Emoji state
-    var autoImageUrl by remember { mutableStateOf<String?>(null) }
-    var autoImageSource by remember { mutableStateOf<String?>("emoji") }
+    // Emoji state
     var autoEmoji by remember { mutableStateOf("📦") }
-    var isSearchingImage by remember { mutableStateOf(false) }
-    var useEmojiOnly by remember { mutableStateOf(false) }
 
     LaunchedEffect(name, sku) {
         val targetName = name.trim()
         val targetSku = sku.trim().takeIf { it.isNotBlank() }
 
         if (targetName.isBlank() && targetSku.isNullOrBlank()) {
-            autoImageUrl = null
             autoEmoji = "📦"
-            isSearchingImage = false
             return@LaunchedEffect
         }
 
         autoEmoji = ProductCategoryEmojiResolver.resolveEmoji(targetName)
-        delay(600)
-
-        isSearchingImage = true
-        val result = imageProvider.searchProductImage(targetName, targetSku)
-        isSearchingImage = false
-
-        if (result != null) {
-            autoImageUrl = result.imageUrl
-            autoImageSource = result.source
-        } else {
-            autoImageUrl = null
-            autoImageSource = "emoji"
-        }
     }
 
     Scaffold(
@@ -116,7 +93,7 @@ fun AddProductScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ProductImageView(
-                            imageUrl = if (useEmojiOnly) null else autoImageUrl,
+                            imageUrl = null,
                             emoji = autoEmoji,
                             productName = name,
                             size = 56.dp,
@@ -124,40 +101,11 @@ fun AddProductScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            if (isSearchingImage) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Searching product image...", style = MaterialTheme.typography.bodySmall)
-                                }
-                            } else if (!autoImageUrl.isNullOrBlank() && !useEmojiOnly) {
-                                Text(
-                                    "✓ Product image found",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Text(
-                                    "Switch to emoji $autoEmoji",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.clickable { useEmojiOnly = true }
-                                )
-                            } else {
-                                Text(
-                                    "Visual: $autoEmoji (Food Emoji)",
-                                    fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                if (!autoImageUrl.isNullOrBlank() && useEmojiOnly) {
-                                    Text(
-                                        "Use product photo",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.clickable { useEmojiOnly = false }
-                                    )
-                                }
-                            }
+                            Text(
+                                "Visual: $autoEmoji (Food Emoji)",
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
                 }
@@ -199,16 +147,14 @@ fun AddProductScreen(
             Button(
                 onClick = { 
                     if (name.isNotBlank()) {
-                        val finalImageUrl = if (useEmojiOnly) null else autoImageUrl
-                        val finalSource = if (finalImageUrl != null) (autoImageSource ?: "remote") else "emoji"
                         val finalEmoji = autoEmoji
 
                         val product = Product(
                             id = UUID.randomUUID().toString(),
                             name = name.trim(),
                             barcode = sku.trim().ifBlank { null },
-                            image_url = finalImageUrl,
-                            image_source = finalSource,
+                            image_url = null,
+                            image_source = "emoji",
                             emoji = finalEmoji,
                             selling_price = sellPrice.toDoubleOrNull() ?: 0.0,
                             purchase_price = costPrice.toDoubleOrNull() ?: 0.0,
