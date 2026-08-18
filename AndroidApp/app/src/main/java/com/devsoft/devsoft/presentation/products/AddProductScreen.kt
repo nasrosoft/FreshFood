@@ -20,6 +20,9 @@ import com.devsoft.devsoft.presentation.components.ProductImageView
 import com.devsoft.devsoft.utils.ProductCategoryEmojiResolver
 import java.util.UUID
 
+import androidx.compose.material.icons.filled.List
+import com.devsoft.devsoft.presentation.components.BarcodeScannerScreen
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
@@ -32,6 +35,22 @@ fun AddProductScreen(
     var sellPrice by remember { mutableStateOf("") }
     var costPrice by remember { mutableStateOf("") }
     var currentStock by remember { mutableStateOf("") }
+    var showScanner by remember { mutableStateOf(false) }
+
+    if (showScanner) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showScanner = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            BarcodeScannerScreen(
+                onBarcodeScanned = { scanned ->
+                    showScanner = false
+                    sku = scanned
+                },
+                onDismiss = { showScanner = false }
+            )
+        }
+    }
 
     // Emoji state
     var autoEmoji by remember { mutableStateOf("📦") }
@@ -116,7 +135,16 @@ fun AddProductScreen(
                 onValueChange = { sku = it }, 
                 label = { Text("Barcode (SKU)") }, 
                 modifier = Modifier.fillMaxWidth(), 
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                trailingIcon = {
+                    IconButton(onClick = { showScanner = true }) {
+                        Icon(
+                            Icons.Filled.List,
+                            contentDescription = "Scan Barcode with Camera",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             )
 
             OutlinedTextField(

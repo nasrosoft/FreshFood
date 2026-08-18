@@ -71,13 +71,16 @@ fun PosScreen(
     }
 
     if (showScanner) {
-        BarcodeScannerScreen(onBarcodeScanned = { barcode ->
-            showScanner = false
-            val product = productsViewModel.findProductByBarcode(barcode)
-            if (product != null) {
-                viewModel.addToCart(product)
-            }
-        })
+        BarcodeScannerScreen(
+            onBarcodeScanned = { barcode ->
+                showScanner = false
+                val product = productsViewModel.findProductByBarcode(barcode)
+                if (product != null) {
+                    viewModel.addToCart(product)
+                }
+            },
+            onDismiss = { showScanner = false }
+        )
         return
     }
 

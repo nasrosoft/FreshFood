@@ -11,11 +11,19 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +38,8 @@ import java.util.concurrent.Executors
 
 @Composable
 fun BarcodeScannerScreen(
-    onBarcodeScanned: (String) -> Unit
+    onBarcodeScanned: (String) -> Unit,
+    onDismiss: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -58,7 +67,7 @@ fun BarcodeScannerScreen(
 
     if (!hasCameraPermission) {
         Box(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -74,8 +83,15 @@ fun BarcodeScannerScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
-                    Text("Grant Permission")
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (onDismiss != null) {
+                        OutlinedButton(onClick = onDismiss) {
+                            Text("Cancel")
+                        }
+                    }
+                    Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
+                        Text("Grant Permission")
+                    }
                 }
             }
         }
@@ -84,53 +100,99 @@ fun BarcodeScannerScreen(
 
     var lastScannedBarcode by remember { mutableStateOf<String?>(null) }
 
-    AndroidView(
-        factory = { ctx ->
-            val previewView = PreviewView(ctx)
-            val cameraExecutor = Executors.newSingleThreadExecutor()
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        AndroidView(
+            factory = { ctx ->
+                val previewView = PreviewView(ctx)
+                val cameraExecutor = Executors.newSingleThreadExecutor()
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
 
-                val imageAnalyzer = ImageAnalysis.Builder()
-                    .setTargetResolution(Size(1280, 720))
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                    .also { analysis ->
-                        analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                            processImageProxy(imageProxy) { barcode ->
-                                if (barcode != lastScannedBarcode) {
-                                    lastScannedBarcode = barcode
-                                    onBarcodeScanned(barcode)
+                    val imageAnalyzer = ImageAnalysis.Builder()
+                        .setTargetResolution(Size(1280, 720))
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .also { analysis ->
+                            analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                                processImageProxy(imageProxy) { barcode ->
+                                    if (barcode != lastScannedBarcode) {
+                                        lastScannedBarcode = barcode
+                                        onBarcodeScanned(barcode)
+                                    }
                                 }
                             }
                         }
+
+                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            preview,
+                            imageAnalyzer
+                        )
+                    } catch (exc: Exception) {
+                        exc.printStackTrace()
                     }
+                }, ContextCompat.getMainExecutor(ctx))
 
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                previewView
+            },
+            modifier = Modifier.fillMaxSize()
+        )
 
-                try {
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview,
-                        imageAnalyzer
-                    )
-                } catch (exc: Exception) {
-                    exc.printStackTrace()
+        // Viewfinder Frame Overlay
+        Box(
+            modifier = Modifier
+                .size(280.dp, 180.dp)
+                .align(Alignment.Center)
+                .border(2.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(16.dp))
+        )
+
+        // Top Bar Controls Overlay
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(16.dp)
+                .align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (onDismiss != null) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                ) {
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Close", tint = Color.White)
                 }
-            }, ContextCompat.getMainExecutor(ctx))
+            } else {
+                Spacer(modifier = Modifier.size(48.dp))
+            }
 
-            previewView
-        },
-        modifier = Modifier.fillMaxSize()
-    )
+            Surface(
+                color = Color.Black.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    text = "Align barcode within frame",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.size(48.dp))
+        }
+    }
 }
 
 @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)

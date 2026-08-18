@@ -81,15 +81,18 @@ fun ProductListScreen(
     }
 
     if (showScanner) {
-        BarcodeScannerScreen(onBarcodeScanned = { barcode ->
-            showScanner = false
-            val product = viewModel.findProductByBarcode(barcode)
-            if (product != null) {
-                selectedProductForDetail = product
-            } else {
-                onAddProductClick(barcode)
-            }
-        })
+        BarcodeScannerScreen(
+            onBarcodeScanned = { barcode ->
+                showScanner = false
+                val product = viewModel.findProductByBarcode(barcode)
+                if (product != null) {
+                    selectedProductForDetail = product
+                } else {
+                    onAddProductClick(barcode)
+                }
+            },
+            onDismiss = { showScanner = false }
+        )
         return
     }
 

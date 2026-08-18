@@ -30,6 +30,9 @@ import com.devsoft.devsoft.utils.ProductCategoryEmojiResolver
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.List
+import com.devsoft.devsoft.presentation.components.BarcodeScannerScreen
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PurchaseEntryScreen(
@@ -41,6 +44,20 @@ fun PurchaseEntryScreen(
     val productsState by productsViewModel.uiState.collectAsState()
 
     var showAddItemDialog by remember { mutableStateOf(false) }
+    var scannedBarcodeForDialog by remember { mutableStateOf<String?>(null) }
+    var showMainScanner by remember { mutableStateOf(false) }
+
+    if (showMainScanner) {
+        BarcodeScannerScreen(
+            onBarcodeScanned = { scanned ->
+                showMainScanner = false
+                scannedBarcodeForDialog = scanned
+                showAddItemDialog = true
+            },
+            onDismiss = { showMainScanner = false }
+        )
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -52,6 +69,9 @@ fun PurchaseEntryScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showMainScanner = true }) {
+                        Icon(Icons.Filled.List, contentDescription = "Scan Barcode", tint = MaterialTheme.colorScheme.onPrimary)
+                    }
                     com.devsoft.devsoft.presentation.components.GlobalSyncButton()
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -154,7 +174,11 @@ fun PurchaseEntryScreen(
         AddItemDialog(
             productsViewModel = productsViewModel,
             products = productsState.products,
-            onDismiss = { showAddItemDialog = false },
+            initialBarcode = scannedBarcodeForDialog,
+            onDismiss = { 
+                showAddItemDialog = false
+                scannedBarcodeForDialog = null
+            },
             onAdd = { product, qty, pPrice, sPrice, expDate ->
                 val updatedProduct = product.copy(
                     purchase_price = pPrice,
@@ -163,6 +187,7 @@ fun PurchaseEntryScreen(
                 productsViewModel.updateProduct(updatedProduct)
                 viewModel.addItem(updatedProduct, qty, pPrice, expDate)
                 showAddItemDialog = false
+                scannedBarcodeForDialog = null
             },
             onAddNewProduct = { name, barcode, imageUrl, imageSource, emoji ->
                 val newProduct = Product(
@@ -187,18 +212,20 @@ fun PurchaseEntryScreen(
 fun AddItemDialog(
     productsViewModel: ProductsViewModel,
     products: List<Product>,
+    initialBarcode: String? = null,
     onDismiss: () -> Unit,
     onAdd: (Product, Int, Double, Double, String) -> Unit,
     onAddNewProduct: (String, String?, String?, String?, String?) -> Product
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    var barcode by remember { mutableStateOf("") }
+    var barcode by remember { mutableStateOf(initialBarcode ?: "") }
     var productName by remember { mutableStateOf("") }
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     var isSearchingBarcode by remember { mutableStateOf(false) }
     var isNewProductByBarcode by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
+    var showScanner by remember { mutableStateOf(false) }
 
     // Emoji state
     var autoEmoji by remember { mutableStateOf("📦") }
@@ -253,6 +280,27 @@ fun AddItemDialog(
         }
     }
 
+    LaunchedEffect(initialBarcode) {
+        if (!initialBarcode.isNullOrBlank()) {
+            lookupBarcode(initialBarcode)
+        }
+    }
+
+    if (showScanner) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showScanner = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            BarcodeScannerScreen(
+                onBarcodeScanned = { scannedCode ->
+                    showScanner = false
+                    lookupBarcode(scannedCode)
+                },
+                onDismiss = { showScanner = false }
+            )
+        }
+    }
+
     val filteredProducts = if (productName.isBlank()) {
         products
     } else {
@@ -295,8 +343,19 @@ fun AddItemDialog(
                         if (isSearchingBarcode) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         } else {
-                            IconButton(onClick = { lookupBarcode(barcode) }) {
-                                Icon(Icons.Filled.Search, contentDescription = "Scan / Search Barcode")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (barcode.isNotBlank()) {
+                                    IconButton(onClick = { lookupBarcode(barcode) }) {
+                                        Icon(Icons.Filled.Search, contentDescription = "Search Barcode")
+                                    }
+                                }
+                                IconButton(onClick = { showScanner = true }) {
+                                    Icon(
+                                        Icons.Filled.List,
+                                        contentDescription = "Scan Barcode with Camera",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
