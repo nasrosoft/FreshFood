@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.devsoft.freshfood"
+    namespace = "com.devsoft.devsoft"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.devsoft.freshfood"
+        applicationId = "com.devsoft.devsoft"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
