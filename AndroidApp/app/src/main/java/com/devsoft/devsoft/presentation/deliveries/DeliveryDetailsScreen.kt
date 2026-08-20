@@ -54,6 +54,9 @@ fun DeliveryDetailsScreen(
             details.items.forEach { itemDetail ->
                 modifiedQuantities[itemDetail.item.product_id] = itemDetail.item.quantity
             }
+            if (details.sale?.payment_method?.equals("CREDIT", ignoreCase = true) == true) {
+                selectedPaymentMethod = "CREDIT"
+            }
         }
     }
 
@@ -197,34 +200,61 @@ fun DeliveryDetailsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(itemDetail.product?.name ?: productId, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text("$unitPrice DA / unit", fontSize = 11.sp, color = TextMuted)
+                                    Text(itemDetail.product?.name ?: productId, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextDark)
+                                    Text("${String.format(java.util.Locale.US, "%.1f", unitPrice)} DA / unit", fontSize = 11.sp, color = TextMuted)
                                 }
 
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                // Middle: Quantity Stepper (if OUT_FOR_DELIVERY) or Quantity Badge (for all other statuses)
                                 if (details.order.status == "OUT_FOR_DELIVERY") {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(CardSurfaceVariant)
-                                            .padding(horizontal = 4.dp)
+                                            .padding(horizontal = 2.dp, vertical = 2.dp)
                                     ) {
                                         IconButton(
                                             onClick = { if (currentQty > 0) modifiedQuantities[productId] = currentQty - 1 },
-                                            modifier = Modifier.size(28.dp)
+                                            modifier = Modifier.size(26.dp)
                                         ) {
                                             Text("-", fontWeight = FontWeight.Bold, color = PrimaryBlue, fontSize = 16.sp)
                                         }
-                                        Text("$currentQty", fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
+                                        Text("$currentQty", fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = TextDark, modifier = Modifier.padding(horizontal = 4.dp))
                                         IconButton(
                                             onClick = { if (currentQty < originalQty) modifiedQuantities[productId] = currentQty + 1 },
-                                            modifier = Modifier.size(28.dp)
+                                            modifier = Modifier.size(26.dp)
                                         ) {
-                                            Icon(Icons.Filled.Add, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                            Icon(Icons.Filled.Add, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
                                         }
                                     }
                                 } else {
-                                    Text("Qty: ${itemDetail.item.quantity}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = CardSurfaceVariant
+                                    ) {
+                                        Text(
+                                            "Qty: $currentQty",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = TextDark,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                // Right: Total of this product in the order
+                                val itemTotal = currentQty * unitPrice
+                                Column(horizontalAlignment = Alignment.End, modifier = Modifier.widthIn(min = 64.dp)) {
+                                    Text(
+                                        "${String.format(java.util.Locale.US, "%,.1f", itemTotal)} DA",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = PrimaryBlue
+                                    )
                                 }
                             }
                         }
@@ -293,20 +323,10 @@ fun DeliveryDetailsScreen(
                     "DELIVERED" -> {
                         Button(
                             onClick = {
-                                val saleItems = details.items.map {
-                                    com.devsoft.devsoft.presentation.sales.CartItem(
-                                        product = it.product ?: com.devsoft.devsoft.domain.model.Product(
-                                            id = it.item.product_id,
-                                            name = "Product",
-                                            selling_price = it.product?.selling_price ?: 0.0
-                                        ),
-                                        quantity = it.item.quantity
-                                    )
-                                }
-                                val uri = PdfReceiptGenerator.generateAndGetUri(
+                                val uri = PdfReceiptGenerator.generateDeliveryReceipt(
                                     context = context,
-                                    cartItems = saleItems,
-                                    totalAmount = originalTotal
+                                    details = details,
+                                    paymentMethod = selectedPaymentMethod
                                 )
                                 if (uri != null) {
                                     val intent = Intent(Intent.ACTION_SEND).apply {
@@ -314,7 +334,7 @@ fun DeliveryDetailsScreen(
                                         putExtra(Intent.EXTRA_STREAM, uri)
                                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     }
-                                    context.startActivity(Intent.createChooser(intent, "Share Receipt"))
+                                    context.startActivity(Intent.createChooser(intent, "Print / Share Receipt"))
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -344,28 +364,43 @@ fun DeliveryDetailsScreen(
                     Text("Payment Method:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedPaymentMethod = "CASH" }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = selectedPaymentMethod == "CASH", onClick = { selectedPaymentMethod = "CASH" })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Cash (Espèces)", fontWeight = FontWeight.Bold)
-                    }
+                    val isOriginalCredit = details.sale?.payment_method?.equals("CREDIT", ignoreCase = true) == true
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedPaymentMethod = "CREDIT" }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = selectedPaymentMethod == "CREDIT", onClick = { selectedPaymentMethod = "CREDIT" })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Credit (Crédit Client)", fontWeight = FontWeight.Bold, color = StatusWarning)
+                    if (isOriginalCredit) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = true, onClick = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Credit (Crédit Client) - Choisi par l'Admin", fontWeight = FontWeight.Bold, color = StatusWarning)
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedPaymentMethod = "CASH" }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = selectedPaymentMethod == "CASH", onClick = { selectedPaymentMethod = "CASH" })
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Cash (Espèces)", fontWeight = FontWeight.Bold)
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedPaymentMethod = "CREDIT" }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = selectedPaymentMethod == "CREDIT", onClick = { selectedPaymentMethod = "CREDIT" })
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Credit (Crédit Client)", fontWeight = FontWeight.Bold, color = StatusWarning)
+                        }
                     }
                 }
             },
@@ -373,16 +408,44 @@ fun DeliveryDetailsScreen(
                 Button(
                     onClick = {
                         val finalQuantities = details.items.associate { it.item.id to (modifiedQuantities[it.item.product_id] ?: it.item.quantity) }
+                        
+                        // If it was already credit, keep it credit. Otherwise use whatever the user selected.
+                        val isOriginalCredit = details.sale?.payment_method?.equals("CREDIT", ignoreCase = true) == true
+                        val methodToSubmit = if (isOriginalCredit) "CREDIT" else selectedPaymentMethod
+                        
                         viewModel.updateDeliveryItemsAndComplete(
                             orderId = details.order.id,
-                            modifiedQuantities = finalQuantities
+                            modifiedQuantities = finalQuantities,
+                            finalPaymentMethod = methodToSubmit
                         )
+
+                        // Generate and launch Print / Share Receipt for the driver
+                        val updatedDetails = details.copy(
+                            items = details.items.map {
+                                val updatedQty = modifiedQuantities[it.item.product_id] ?: it.item.quantity
+                                it.copy(item = it.item.copy(quantity = updatedQty))
+                            }
+                        )
+                        val uri = PdfReceiptGenerator.generateDeliveryReceipt(
+                            context = context,
+                            details = updatedDetails,
+                            paymentMethod = methodToSubmit
+                        )
+                        if (uri != null) {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/pdf"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Print / Share Receipt"))
+                        }
+
                         showConfirmDialog = false
                         onBack()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = StatusSuccess)
                 ) {
-                    Text("Confirm")
+                    Text("Confirm & Print")
                 }
             },
             dismissButton = {

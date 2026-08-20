@@ -49,7 +49,10 @@ data class DashboardState(
     val pendingDeliveriesToday: Int = 0,
     val selectedDetailType: DashboardDetailType = DashboardDetailType.NONE,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val avgMarginPercentage: Double = 20.0,
+    val salesGrowthPercentage: Double? = null,
+    val previousPeriodLabelRes: Int = R.string.yesterday
 )
 
 class DashboardViewModel(
@@ -74,8 +77,27 @@ class DashboardViewModel(
                 
                 val currentRange = _uiState.value.timeRange
                 val filteredSales = filterSalesByRange(sales, currentRange)
+                val prevSales = filterSalesByPreviousRange(sales, currentRange)
                 val salesTotal = filteredSales.sumOf { it.total_amount }
-                val profitTotal = salesTotal * 0.20 // 20% estimated margin
+                val prevSalesTotal = prevSales.sumOf { it.total_amount }
+                
+                val salesGrowth = if (prevSalesTotal > 0) {
+                    ((salesTotal - prevSalesTotal) / prevSalesTotal) * 100
+                } else if (salesTotal > 0) {
+                    100.0
+                } else {
+                    0.0
+                }
+
+                val avgMargin = if (products.isNotEmpty()) {
+                    val validProducts = products.filter { it.selling_price > 0 }
+                    if (validProducts.isNotEmpty()) {
+                        validProducts.map { (it.selling_price - it.purchase_price) / it.selling_price }.average()
+                    } else 0.20
+                } else 0.20
+                val marginPercent = if (avgMargin.isNaN()) 20.0 else avgMargin * 100
+                
+                val profitTotal = salesTotal * (marginPercent / 100.0)
                 val totalCredit = customers.sumOf { it.current_credit }
                 val lowStock = products.filter { it.current_stock <= it.min_stock }
 
@@ -117,7 +139,10 @@ class DashboardViewModel(
                         totalDeliveriesToday = totalDeliveries,
                         completedDeliveriesToday = completedDeliveries,
                         pendingDeliveriesToday = pendingDeliveries,
-                        isLoading = false
+                        isLoading = false,
+                        avgMarginPercentage = marginPercent,
+                        salesGrowthPercentage = salesGrowth,
+                        previousPeriodLabelRes = getPreviousPeriodLabel(currentRange)
                     ) 
                 }
             } catch (e: Exception) {
@@ -129,13 +154,26 @@ class DashboardViewModel(
     fun setTimeRange(range: DashboardTimeRange) {
         _uiState.update { state ->
             val filtered = filterSalesByRange(state.allSales, range)
+            val prevSales = filterSalesByPreviousRange(state.allSales, range)
             val salesTotal = filtered.sumOf { it.total_amount }
-            val profitTotal = salesTotal * 0.20
+            val prevSalesTotal = prevSales.sumOf { it.total_amount }
+            
+            val salesGrowth = if (prevSalesTotal > 0) {
+                ((salesTotal - prevSalesTotal) / prevSalesTotal) * 100
+            } else if (salesTotal > 0) {
+                100.0
+            } else {
+                0.0
+            }
+            
+            val profitTotal = salesTotal * (state.avgMarginPercentage / 100.0)
             state.copy(
                 timeRange = range,
                 filteredSales = filtered,
                 salesTotal = salesTotal,
-                profitTotal = profitTotal
+                profitTotal = profitTotal,
+                salesGrowthPercentage = salesGrowth,
+                previousPeriodLabelRes = getPreviousPeriodLabel(range)
             )
         }
     }
@@ -169,6 +207,44 @@ class DashboardViewModel(
                 }
             }
             DashboardTimeRange.ALL -> sales
+        }
+    }
+
+    private fun filterSalesByPreviousRange(sales: List<Sale>, range: DashboardTimeRange): List<Sale> {
+        val today = LocalDate.now()
+        return when (range) {
+            DashboardTimeRange.DAY -> {
+                val yesterday = today.minusDays(1)
+                sales.filter { parseDate(it.created_at) == yesterday }
+            }
+            DashboardTimeRange.WEEK -> {
+                val startOfWeek = today.minusDays(today.dayOfWeek.value.toLong() - 1)
+                val startOfPrevWeek = startOfWeek.minusWeeks(1)
+                val endOfPrevWeek = startOfWeek.minusDays(1)
+                sales.filter {
+                    val d = parseDate(it.created_at)
+                    d != null && !d.isBefore(startOfPrevWeek) && !d.isAfter(endOfPrevWeek)
+                }
+            }
+            DashboardTimeRange.MONTH -> {
+                val startOfMonth = today.withDayOfMonth(1)
+                val startOfPrevMonth = startOfMonth.minusMonths(1)
+                val endOfPrevMonth = startOfMonth.minusDays(1)
+                sales.filter {
+                    val d = parseDate(it.created_at)
+                    d != null && !d.isBefore(startOfPrevMonth) && !d.isAfter(endOfPrevMonth)
+                }
+            }
+            DashboardTimeRange.ALL -> emptyList()
+        }
+    }
+
+    private fun getPreviousPeriodLabel(range: DashboardTimeRange): Int {
+        return when (range) {
+            DashboardTimeRange.DAY -> R.string.yesterday
+            DashboardTimeRange.WEEK -> R.string.last_week
+            DashboardTimeRange.MONTH -> R.string.last_month
+            DashboardTimeRange.ALL -> R.string.yesterday
         }
     }
 

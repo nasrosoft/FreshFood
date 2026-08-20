@@ -60,20 +60,8 @@ fun DeliveryDashboardScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadDeliveries()
-    }
-
-    LaunchedEffect(uiState) {
-        if (uiState is DeliveryUiState.Success && isDriver) {
-            val pendingCount = (uiState as DeliveryUiState.Success).deliveries.count { 
-                it.order.status.equals("PENDING", ignoreCase = true) || it.order.status.equals("ASSIGNED", ignoreCase = true) 
-            }
-            if (pendingCount > 0) {
-                com.devsoft.devsoft.utils.NotificationHelper.showDeliveryNotification(
-                    context = context,
-                    title = "Livraisons en attente 🚚",
-                    message = "Vous avez $pendingCount livraison(s) à effectuer aujourd'hui."
-                )
-            }
+        if (isDriver) {
+            viewModel.checkAndNotifyNewDeliveries(context, currentUserId)
         }
     }
 

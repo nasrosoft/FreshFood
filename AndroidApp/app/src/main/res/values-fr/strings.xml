@@ -22,9 +22,13 @@
     <string name="good_morning">Bonjour</string>
     <string name="admin">Admin</string>
     <string name="todays_sales">Ventes du jour</string>
-    <string name="vs_yesterday">+12.5% vs hier</string>
-    <string name="profit_day">Bénéfice (Jour)</string>
-    <string name="est_margin">Marge est. 20%</string>
+    <string name="vs_yesterday">%1$s vs hier</string>
+    <string name="yesterday">hier</string>
+    <string name="last_week">semaine dernière</string>
+    <string name="last_month">mois dernier</string>
+    <string name="vs_label">%1$s vs %2$s</string>
+    <string name="profit_day">Bénéfice</string>
+    <string name="est_margin">Marge est. %1$s%%</string>
     <string name="stock_value">Valeur du Stock</string>
     <string name="alerts">Alertes</string>
     <string name="products_low_stock">%d produits en stock faible</string>
@@ -140,4 +144,31 @@
     <string name="cash_payment">Espèces (Cash)</string>
     <string name="credit_payment">Crédit Client</string>
     <string name="confirm_and_checkout">Confirmer et Encaisser</string>
+
+    <!-- Purchase Entry -->
+    <string name="enter_purchase_stock">Saisie des Achats / Stock</string>
+    <string name="scan_barcode">Scanner code-barres</string>
+    <string name="back">Retour</string>
+    <string name="add_item">Ajouter un article</string>
+    <string name="invoice_number_optional">Numéro de Facture (Facultatif)</string>
+    <string name="purchase_items">Articles Achetés</string>
+    <string name="no_items_added_yet">Aucun article ajouté pour le moment.</string>
+    <string name="qty_label">Qté : %d</string>
+    <string name="price_label">Prix : %s DA</string>
+    <string name="exp_label">Exp : %s</string>
+    <string name="total_amount_format">Total : %s DA</string>
+    <string name="validate_purchase">Valider l\'Achat</string>
+    <string name="add_item_to_purchase">Ajouter un Article à l\'Achat</string>
+    <string name="barcode">Code-barres</string>
+    <string name="search_barcode">Rechercher code-barres</string>
+    <string name="scan_barcode_camera">Scanner code-barres avec la caméra</string>
+    <string name="new_barcode_detected">Nouveau code-barres détecté. Entrez le nom du produit ci-dessous.</string>
+    <string name="existing_product_loaded">Produit existant chargé : %s</string>
+    <string name="product_name_search">Nom du Produit / Recherche</string>
+    <string name="quantity">Quantité</string>
+    <string name="purchase_price">Prix d\'Achat</string>
+    <string name="margin_percentage">Marge Bénéficiaire (%)</string>
+    <string name="selling_price">Prix de Vente</string>
+    <string name="expiration_date_format">Date d\'Expiration (AAAA-MM-JJ)</string>
+    <string name="visual_food_emoji">Visuel : %s (Emoji)</string>
 </resources>

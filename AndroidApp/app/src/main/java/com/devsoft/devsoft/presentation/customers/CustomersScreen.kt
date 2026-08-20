@@ -157,10 +157,18 @@ fun CustomersScreen(
     }
 
     // -------------------------------------------------------------
+    // -------------------------------------------------------------
     // CUSTOMER DETAIL DIALOG (matching reference design)
     // -------------------------------------------------------------
     if (selectedCustomerForDetail != null) {
         val customer = selectedCustomerForDetail!!
+        val creditDetails by viewModel.customerCreditDetails.collectAsState()
+        val isLoadingCreditDetails by viewModel.isLoadingCreditDetails.collectAsState()
+
+        LaunchedEffect(customer.id) {
+            viewModel.loadCustomerCreditDetails(customer.id)
+        }
+
         AlertDialog(
             onDismissRequest = { selectedCustomerForDetail = null },
             title = {
@@ -222,19 +230,101 @@ fun CustomersScreen(
                     }
 
                     if (customer.current_credit > 0) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         Button(
                             onClick = {
                                 selectedCustomerForPayment = customer
                                 selectedCustomerForDetail = null
                             },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            modifier = Modifier.fillMaxWidth().height(46.dp),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                         ) {
                             Icon(Icons.Filled.CheckCircle, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.receive_payment), fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Détails des Crédits / Orders History",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (isLoadingCreditDetails) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = PrimaryBlue)
+                        }
+                    } else if (creditDetails.isEmpty()) {
+                        Text("Aucun historique de crédit disponible.", fontSize = 12.sp, color = TextMuted)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            creditDetails.forEach { detail ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(containerColor = CardSurfaceVariant)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                detail.invoice_number ?: "Paiement Direct",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = PrimaryBlue
+                                            )
+                                            val isPayment = detail.transaction_type == "PAYMENT"
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = if (isPayment) StatusSuccessContainer else StatusWarningContainer
+                                            ) {
+                                                Text(
+                                                    if (isPayment) "Paiement" else "Vente Crédit",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isPayment) StatusSuccess else StatusWarning,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+
+                                        detail.items_summary?.let { summary ->
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                summary,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = TextDark
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            val formattedDate = detail.created_at?.take(10) ?: ""
+                                            Text(formattedDate, fontSize = 11.sp, color = TextMuted)
+                                            
+                                            val isPayment = detail.transaction_type == "PAYMENT"
+                                            Text(
+                                                "${if (isPayment) "-" else "+"}${String.format(java.util.Locale.US, "%,.0f", detail.credit_amount)} DA",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = if (isPayment) StatusSuccess else StatusError
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

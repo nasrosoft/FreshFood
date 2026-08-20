@@ -4,8 +4,17 @@ import com.devsoft.devsoft.domain.model.*
 import com.devsoft.devsoft.domain.repository.DeliveryRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+
+@Serializable
+data class SyncDeliveryParams(
+    val p_delivery_id: String,
+    val p_modified_quantities: Map<String, Int>,
+    val p_final_payment_method: String
+)
 
 class DeliveryRepositoryImpl(
     private val supabase: SupabaseClient
@@ -21,6 +30,12 @@ class DeliveryRepositoryImpl(
         } catch (e: Exception) {
             emptyList()
         }
+        val saleIds = orders.mapNotNull { it.sale_id }.distinct()
+        val sales = if (saleIds.isNotEmpty()) {
+            supabase.postgrest["sales"].select { filter { isIn("id", saleIds) } }.decodeList<Sale>()
+        } else {
+            emptyList()
+        }
 
         val detailedOrders = orders.map { order ->
             val customer = customers.find { it.id == order.customer_id }
@@ -29,7 +44,8 @@ class DeliveryRepositoryImpl(
                 val product = products.find { it.id == item.product_id }
                 DeliveryItemDetail(item, product)
             }
-            DeliveryOrderWithDetails(order, customer, driver, orderItems)
+            val sale = sales.find { it.id == order.sale_id }
+            DeliveryOrderWithDetails(order, customer, driver, orderItems, sale)
         }
         
         emit(detailedOrders)
@@ -52,6 +68,10 @@ class DeliveryRepositoryImpl(
             }
         }
         
+        val sale = order.sale_id?.let {
+            supabase.postgrest["sales"].select { filter { eq("id", it) } }.decodeSingleOrNull<Sale>()
+        }
+        
         val items = supabase.postgrest["delivery_items"]
             .select { filter { eq("delivery_order_id", id) } }
             .decodeList<DeliveryItem>()
@@ -70,7 +90,7 @@ class DeliveryRepositoryImpl(
             DeliveryItemDetail(item, products.find { it.id == item.product_id })
         }
         
-        return DeliveryOrderWithDetails(order, customer, driver, orderItems)
+        return DeliveryOrderWithDetails(order, customer, driver, orderItems, sale)
     }
 
     override suspend fun updateDeliveryStatus(id: String, newStatus: String) {
@@ -85,23 +105,13 @@ class DeliveryRepositoryImpl(
         }
     }
 
-    override suspend fun updateDeliveryItemsAndComplete(orderId: String, modifiedQuantities: Map<String, Int>) {
-        val items = supabase.postgrest["delivery_items"]
-            .select { filter { eq("delivery_order_id", orderId) } }
-            .decodeList<DeliveryItem>()
-            
-        items.forEach { item ->
-            val newQty = modifiedQuantities[item.product_id] ?: item.quantity
-            if (newQty < item.quantity) {
-                if (newQty == 0) {
-                    supabase.postgrest["delivery_items"].delete { filter { eq("id", item.id) } }
-                } else {
-                    supabase.postgrest["delivery_items"].update({ set("quantity", newQty) }) { filter { eq("id", item.id) } }
-                }
-            }
-        }
-        
-        updateDeliveryStatus(orderId, "DELIVERED")
+    override suspend fun updateDeliveryItemsAndComplete(orderId: String, modifiedQuantities: Map<String, Int>, finalPaymentMethod: String?) {
+        val params = SyncDeliveryParams(
+            p_delivery_id = orderId,
+            p_modified_quantities = modifiedQuantities,
+            p_final_payment_method = finalPaymentMethod ?: "CASH"
+        )
+        supabase.postgrest.rpc("sync_delivery_completion", params)
     }
 
     override suspend fun deleteDeliveryOrder(id: String) {

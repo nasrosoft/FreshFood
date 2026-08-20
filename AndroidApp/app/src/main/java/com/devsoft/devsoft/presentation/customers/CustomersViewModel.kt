@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.devsoft.devsoft.domain.model.Customer
+import com.devsoft.devsoft.domain.model.CustomerCreditDetail
 import com.devsoft.devsoft.domain.repository.CustomerRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,12 @@ class CustomersViewModel(
     private val _uiState = MutableStateFlow<CustomersUiState>(CustomersUiState.Loading)
     val uiState: StateFlow<CustomersUiState> = _uiState.asStateFlow()
 
+    private val _customerCreditDetails = MutableStateFlow<List<CustomerCreditDetail>>(emptyList())
+    val customerCreditDetails: StateFlow<List<CustomerCreditDetail>> = _customerCreditDetails.asStateFlow()
+
+    private val _isLoadingCreditDetails = MutableStateFlow(false)
+    val isLoadingCreditDetails: StateFlow<Boolean> = _isLoadingCreditDetails.asStateFlow()
+
     init {
         loadCustomers()
     }
@@ -37,6 +44,14 @@ class CustomersViewModel(
                 .collect { customers ->
                     _uiState.value = CustomersUiState.Success(customers)
                 }
+        }
+    }
+
+    fun loadCustomerCreditDetails(customerId: String) {
+        viewModelScope.launch {
+            _isLoadingCreditDetails.value = true
+            _customerCreditDetails.value = repository.getCustomerCreditDetails(customerId)
+            _isLoadingCreditDetails.value = false
         }
     }
 
@@ -61,8 +76,8 @@ class CustomersViewModel(
                     user_id = "00000000-0000-0000-0000-000000000000"
                 )
                 repository.registerPayment(payment)
-                // Refresh list from remote database to ensure sync
                 loadCustomers()
+                loadCustomerCreditDetails(customerId)
             } catch (e: Exception) {
                 e.printStackTrace()
                 loadCustomers()

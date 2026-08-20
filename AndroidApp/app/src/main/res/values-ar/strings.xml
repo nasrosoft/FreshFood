@@ -140,4 +140,31 @@
     <string name="cash_payment">نقداً (Cash)</string>
     <string name="credit_payment">دين على الزبون (Crédit)</string>
     <string name="confirm_and_checkout">تأكيد وإتمام البيع</string>
+
+    <!-- Purchase Entry -->
+    <string name="enter_purchase_stock">إدخال المشتريات / المخزون</string>
+    <string name="scan_barcode">مسح الباركود</string>
+    <string name="back">رجوع</string>
+    <string name="add_item">إضافة عنصر</string>
+    <string name="invoice_number_optional">رقم الفاتورة (اختياري)</string>
+    <string name="purchase_items">عناصر المشتريات</string>
+    <string name="no_items_added_yet">لم يتم إضافة أي عنصر بعد.</string>
+    <string name="qty_label">الكمية : %d</string>
+    <string name="price_label">السعر : %s دج</string>
+    <string name="exp_label">الصلاحية : %s</string>
+    <string name="total_amount_format">المجموع : %s دج</string>
+    <string name="validate_purchase">تأكيد الشراء</string>
+    <string name="add_item_to_purchase">إضافة عنصر للمشتريات</string>
+    <string name="barcode">الباركود</string>
+    <string name="search_barcode">بحث عن الباركود</string>
+    <string name="scan_barcode_camera">مسح الباركود بالكاميرا</string>
+    <string name="new_barcode_detected">تم اكتشاف باركود جديد. أدخل اسم المنتج أدناه للتسجيل.</string>
+    <string name="existing_product_loaded">تم تحميل المنتج: %s</string>
+    <string name="product_name_search">اسم المنتج / بحث</string>
+    <string name="quantity">الكمية</string>
+    <string name="purchase_price">سعر الشراء</string>
+    <string name="margin_percentage">نسبة الهامش (%)</string>
+    <string name="selling_price">سعر البيع</string>
+    <string name="expiration_date_format">تاريخ انتهاء الصلاحية (YYYY-MM-DD)</string>
+    <string name="visual_food_emoji">الشكل : %s (رمز تعبيري)</string>
 </resources>

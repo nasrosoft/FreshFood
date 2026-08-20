@@ -19,43 +19,49 @@ import androidx.core.view.WindowCompat
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryBlue,
     onPrimary = Color.White,
-    primaryContainer = PrimaryBlueContainer,
-    onPrimaryContainer = OnPrimaryBlueContainer,
+    primaryContainer = LightPrimaryBlueContainer,
+    onPrimaryContainer = LightOnPrimaryBlueContainer,
     secondary = AccentSky,
     onSecondary = Color.White,
-    secondaryContainer = StatusInfoContainer,
+    secondaryContainer = Color(0xFFEFF6FF),
     onSecondaryContainer = PrimaryBlueDark,
     tertiary = AccentIndigo,
     onTertiary = Color.White,
-    background = AppBackground,
-    onBackground = TextDark,
-    surface = CardSurface,
-    onSurface = TextDark,
-    surfaceVariant = CardSurfaceVariant,
-    onSurfaceVariant = TextMuted,
-    outline = CardBorder,
+    background = LightAppBackground,
+    onBackground = LightTextDark,
+    surface = LightCardSurface,
+    onSurface = LightTextDark,
+    surfaceVariant = LightCardSurfaceVariant,
+    onSurfaceVariant = LightTextMuted,
+    outline = LightCardBorder,
     error = StatusError,
     onError = Color.White,
-    errorContainer = StatusErrorContainer,
+    errorContainer = Color(0xFFFEE2E2),
     onErrorContainer = StatusError
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryBlueLight,
     onPrimary = Color.White,
-    primaryContainer = PrimaryBlueDark,
-    onPrimaryContainer = PrimaryBlueContainer,
+    primaryContainer = DarkPrimaryBlueContainer,
+    onPrimaryContainer = DarkOnPrimaryBlueContainer,
     secondary = AccentSky,
     onSecondary = Color.White,
-    background = Color(0xFF0F172A),
-    onBackground = Color(0xFFF8FAFC),
-    surface = Color(0xFF1E293B),
-    onSurface = Color(0xFFF8FAFC),
-    surfaceVariant = Color(0xFF334155),
-    onSurfaceVariant = Color(0xFF94A3B8),
-    outline = Color(0xFF475569),
-    error = StatusError,
-    onError = Color.White
+    secondaryContainer = Color(0xFF1E293B),
+    onSecondaryContainer = PrimaryBlueLight,
+    tertiary = AccentIndigo,
+    onTertiary = Color.White,
+    background = DarkAppBackground,
+    onBackground = DarkTextLight,
+    surface = DarkCardSurface,
+    onSurface = DarkTextLight,
+    surfaceVariant = DarkCardSurfaceVariant,
+    onSurfaceVariant = DarkTextMuted,
+    outline = DarkCardBorder,
+    error = StatusErrorLight,
+    onError = Color.White,
+    errorContainer = Color(0xFF7F1D1D),
+    onErrorContainer = Color(0xFFFECACA)
 )
 
 @Composable
@@ -88,3 +94,4 @@ fun DevsoftTheme(
         content = content
     )
 }
+

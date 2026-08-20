@@ -46,14 +46,85 @@ object NotificationHelper {
         }
     }
 
+    private const val PREFS_NAME = "devsoft_notifications_prefs"
+    private const val KEY_NOTIFIED_ORDERS = "notified_delivery_order_ids"
+    private const val KEY_USER_ID = "logged_in_user_id"
+    private const val KEY_USER_ROLE = "logged_in_user_role"
+    private const val WORK_NAME_DELIVERY = "delivery_notification_periodic_worker"
+
+    fun persistCurrentUser(context: Context, userId: String?, role: String?) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(KEY_USER_ID, userId)
+            .putString(KEY_USER_ROLE, role)
+            .apply()
+    }
+
+    fun getPersistedUserId(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_USER_ID, null)
+    }
+
+    fun getPersistedUserRole(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_USER_ROLE, null)
+    }
+
+    fun scheduleBackgroundDeliverySync(context: Context) {
+        val constraints = androidx.work.Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+
+        val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.devsoft.devsoft.workers.DeliveryNotificationWorker>(
+            15, java.util.concurrent.TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .build()
+
+        androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WORK_NAME_DELIVERY,
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            periodicRequest
+        )
+
+        // Also trigger an immediate check
+        val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.devsoft.devsoft.workers.DeliveryNotificationWorker>()
+            .setConstraints(constraints)
+            .build()
+        androidx.work.WorkManager.getInstance(context).enqueue(oneTimeRequest)
+    }
+
+    fun cancelBackgroundDeliverySync(context: Context) {
+        androidx.work.WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME_DELIVERY)
+    }
+
+    fun isOrderNotified(context: Context, orderId: String): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val notifiedSet = prefs.getStringSet(KEY_NOTIFIED_ORDERS, emptySet()) ?: emptySet()
+        return notifiedSet.contains(orderId)
+    }
+
+    fun markOrderAsNotified(context: Context, orderId: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val current = prefs.getStringSet(KEY_NOTIFIED_ORDERS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        current.add(orderId)
+        prefs.edit().putStringSet(KEY_NOTIFIED_ORDERS, current).apply()
+    }
+
     fun showDeliveryNotification(
         context: Context,
         title: String,
         message: String,
-        notificationId: Int = System.currentTimeMillis().toInt()
+        orderId: String? = null,
+        notificationId: Int = (orderId?.hashCode() ?: System.currentTimeMillis().toInt())
     ) {
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            action = Intent.ACTION_VIEW
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            if (!orderId.isNullOrBlank()) {
+                putExtra("EXTRA_ORDER_ID", orderId)
+                putExtra("EXTRA_DESTINATION", "delivery_details")
+            }
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -71,6 +142,10 @@ object NotificationHelper {
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+
+        if (!orderId.isNullOrBlank()) {
+            markOrderAsNotified(context, orderId)
+        }
 
         try {
             val notificationManager = NotificationManagerCompat.from(context)

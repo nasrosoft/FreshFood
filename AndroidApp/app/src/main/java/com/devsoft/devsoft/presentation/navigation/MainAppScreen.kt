@@ -70,6 +70,8 @@ fun MainAppScreen(
     returnsViewModel: ReturnsViewModel,
     profileRepository: ProfileRepository,
     activationRepository: ActivationRepository? = null,
+    targetDeliveryId: String? = null,
+    onTargetDeliveryHandled: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -89,6 +91,31 @@ fun MainAppScreen(
     // Dynamic user profile from Supabase
     var userProfile by remember { mutableStateOf<Profile?>(null) }
 
+    // Handle deep link navigation when user clicks on a delivery notification
+    LaunchedEffect(targetDeliveryId) {
+        if (!targetDeliveryId.isNullOrBlank()) {
+            navController.navigate("delivery_details/$targetDeliveryId") {
+                launchSingleTop = true
+            }
+            onTargetDeliveryHandled()
+        }
+    }
+
+    // Background periodic delivery checker for driver
+    val isDelivery = userRole == "DELIVERY"
+    LaunchedEffect(userId, isDelivery) {
+        if (isDelivery && !userId.isNullOrBlank()) {
+            while (true) {
+                try {
+                    deliveryViewModel.checkAndNotifyNewDeliveries(context, userId)
+                } catch (e: Exception) {
+                    // Ignore transient network errors in background poll
+                }
+                kotlinx.coroutines.delay(15_000L) // Poll every 15 seconds
+            }
+        }
+    }
+
     LaunchedEffect(userId) {
         if (!userId.isNullOrBlank()) {
             try {
@@ -102,12 +129,13 @@ fun MainAppScreen(
     LaunchedEffect(Unit) {
         try {
             activationRepository?.getAppSettings()?.onSuccess { setting: AppSetting ->
-                val fetchedName = setting.brand_name?.ifBlank { "DevSoft" } ?: "DevSoft"
+                val fetchedName = setting.brand_name?.ifBlank { "Fresh Food" } ?: "Fresh Food"
                 val fetchedTagline = setting.brand_tagline?.ifBlank { "Stock & Sales Management" } ?: "Stock & Sales Management"
                 brandName = fetchedName
                 brandTagline = fetchedTagline
                 editBrandName = fetchedName
                 editBrandTagline = fetchedTagline
+                com.devsoft.devsoft.utils.PdfReceiptGenerator.persistStoreName(context, fetchedName)
             }
         } catch (e: Exception) {
             // Ignore cancellation exceptions on activity recreate
@@ -126,7 +154,6 @@ fun MainAppScreen(
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val isDelivery = userRole == "DELIVERY"
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -157,7 +184,7 @@ fun MainAppScreen(
                                 brandName,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryBlueDark
+                                color = OnPrimaryBlueContainer
                             )
                             Text(
                                 brandTagline,
@@ -208,6 +235,7 @@ fun MainAppScreen(
 
                 // Navigation Items
                 if (!isDelivery) {
+                    // 1. Dashboard
                     DrawerItem(
                         icon = Icons.Filled.Home,
                         label = stringResource(R.string.dashboard),
@@ -217,6 +245,7 @@ fun MainAppScreen(
                             scope.launch { drawerState.close() }
                         }
                     )
+                    // 2. Sales (POS)
                     DrawerItem(
                         icon = Icons.Filled.ShoppingCart,
                         label = stringResource(R.string.sales_pos),
@@ -226,6 +255,7 @@ fun MainAppScreen(
                             scope.launch { drawerState.close() }
                         }
                     )
+                    // 3. Products
                     DrawerItem(
                         icon = Icons.Filled.List,
                         label = stringResource(R.string.products),
@@ -235,15 +265,7 @@ fun MainAppScreen(
                             scope.launch { drawerState.close() }
                         }
                     )
-                    DrawerItem(
-                        icon = Icons.Filled.Person,
-                        label = stringResource(R.string.customers),
-                        selected = currentRoute == "customers",
-                        onClick = {
-                            navController.navigate("customers") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    // 4. Purchase Entry
                     DrawerItem(
                         icon = Icons.Filled.Add,
                         label = stringResource(R.string.purchase_entry),
@@ -253,6 +275,27 @@ fun MainAppScreen(
                             scope.launch { drawerState.close() }
                         }
                     )
+                    // 5. Deliveries
+                    DrawerItem(
+                        icon = Icons.Filled.ShoppingCart,
+                        label = stringResource(R.string.deliveries),
+                        selected = currentRoute == "deliveries",
+                        onClick = {
+                            navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+                    // 6. Customers
+                    DrawerItem(
+                        icon = Icons.Filled.Person,
+                        label = stringResource(R.string.customers),
+                        selected = currentRoute == "customers",
+                        onClick = {
+                            navController.navigate("customers") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+                    // 7. Users / Drivers
                     DrawerItem(
                         icon = Icons.Filled.Person,
                         label = stringResource(R.string.users_drivers),
@@ -262,17 +305,17 @@ fun MainAppScreen(
                             scope.launch { drawerState.close() }
                         }
                     )
+                } else {
+                    DrawerItem(
+                        icon = Icons.Filled.ShoppingCart,
+                        label = stringResource(R.string.deliveries),
+                        selected = currentRoute == "deliveries",
+                        onClick = {
+                            navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
+                            scope.launch { drawerState.close() }
+                        }
+                    )
                 }
-
-                DrawerItem(
-                    icon = Icons.Filled.ShoppingCart,
-                    label = stringResource(R.string.deliveries),
-                    selected = currentRoute == "deliveries",
-                    onClick = {
-                        navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
-                        scope.launch { drawerState.close() }
-                    }
-                )
 
                 Spacer(modifier = Modifier.weight(1f))
                 Divider(modifier = Modifier.padding(horizontal = 16.dp), color = CardBorder)
@@ -356,6 +399,7 @@ fun MainAppScreen(
                                         onSuccess = {
                                             brandName = editBrandName.trim()
                                             brandTagline = editBrandTagline.trim()
+                                            com.devsoft.devsoft.utils.PdfReceiptGenerator.persistStoreName(context, editBrandName.trim())
                                             isSavingBrand = false
                                             showParametrageDialog = false
                                             android.widget.Toast.makeText(context, "Brand updated successfully!", android.widget.Toast.LENGTH_SHORT).show()

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.devsoft.devsoft.domain.model.Profile
 import com.devsoft.devsoft.domain.repository.ProfileRepository
+import com.devsoft.devsoft.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +83,7 @@ fun UserManagementScreen(
                         label = { Text("Last Name") },
                         singleLine = true
                     )
-                    Text("Note: User will be created with DELIVERY role.", color = Color.Gray)
+                    Text("Note: User will be created with DELIVERY role.", color = TextMuted)
                 }
             },
             confirmButton = {
@@ -178,14 +179,14 @@ fun UserManagementScreen(
                 val profile = profiles[index]
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = CardSurface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Column {
                                 Text(text = "${profile.first_name} ${profile.last_name}", fontWeight = FontWeight.Bold)
-                                Text(text = "Role: ${profile.role}", color = Color.Gray)
+                                Text(text = "Role: ${profile.role}", color = TextMuted)
                             }
                             Row {
                                 IconButton(onClick = {
@@ -212,3 +213,4 @@ fun UserManagementScreen(
         }
     }
 }
+

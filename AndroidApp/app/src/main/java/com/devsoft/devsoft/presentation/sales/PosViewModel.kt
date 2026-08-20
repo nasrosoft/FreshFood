@@ -29,8 +29,14 @@ data class PosUiState(
     val totalAmount: Double = 0.0,
     val isLoading: Boolean = false,
     val checkoutMessage: String? = null,
+    val lastSaleId: String? = null,
     val lastSaleItems: List<CartItem>? = null,
     val lastSaleTotal: Double? = null,
+    val lastCustomerName: String? = null,
+    val lastDriverName: String? = null,
+    val lastPaymentMethod: String? = null,
+    val lastCustomerCredit: Double? = null,
+    val lastCustomerCreditLimit: Double? = null,
     val deliveryDrivers: List<Profile> = emptyList()
 )
 
@@ -118,18 +124,53 @@ class PosViewModel(
     }
 
     fun clearCart() {
-        _cartState.update { it.copy(cartItems = emptyList(), totalAmount = 0.0, checkoutMessage = null, lastSaleItems = null, lastSaleTotal = null) }
+        _cartState.update { 
+            it.copy(
+                cartItems = emptyList(), 
+                totalAmount = 0.0, 
+                checkoutMessage = null, 
+                lastSaleId = null,
+                lastSaleItems = null, 
+                lastSaleTotal = null,
+                lastCustomerName = null,
+                lastDriverName = null,
+                lastPaymentMethod = null,
+                lastCustomerCredit = null,
+                lastCustomerCreditLimit = null
+            ) 
+        }
     }
 
     fun dismissCheckoutMessage() {
-        _cartState.update { it.copy(checkoutMessage = null, lastSaleItems = null, lastSaleTotal = null) }
+        _cartState.update { 
+            it.copy(
+                checkoutMessage = null, 
+                lastSaleId = null,
+                lastSaleItems = null, 
+                lastSaleTotal = null,
+                lastCustomerName = null,
+                lastDriverName = null,
+                lastPaymentMethod = null,
+                lastCustomerCredit = null,
+                lastCustomerCreditLimit = null
+            ) 
+        }
     }
 
     private fun calculateTotal(items: List<CartItem>): Double {
         return items.sumOf { it.product.selling_price * it.quantity }
     }
 
-    fun checkout(paymentMethod: String, customerId: String? = null, createDelivery: Boolean = false, deliveryDriverId: String? = null) {
+    fun checkout(
+        paymentMethod: String, 
+        customerId: String? = null, 
+        customerName: String? = null,
+        customerCredit: Double? = null,
+        customerCreditLimit: Double? = null,
+        createDelivery: Boolean = false, 
+        deliveryDriverId: String? = null,
+        deliveryDriverName: String? = null
+    ) {
         val currentState = _cartState.value
         if (currentState.cartItems.isEmpty()) return
         
@@ -152,8 +193,9 @@ class PosViewModel(
             val paidAmount = if (isCredit) 0.0 else totalSaleAmount
             val creditAmount = if (isCredit) totalSaleAmount else 0.0
 
+            val saleId = java.util.UUID.randomUUID().toString()
             val saleReq = SaleRequest(
-                id = java.util.UUID.randomUUID().toString(),
+                id = saleId,
                 customer_id = customerId,
                 user_id = null,
                 total_amount = totalSaleAmount,
@@ -169,13 +211,20 @@ class PosViewModel(
             
             _cartState.update { state ->
                 if (result.isSuccess) {
+                    val invoiceId = result.getOrNull()?.takeIf { it.isNotBlank() } ?: saleId
                     state.copy(
                         isLoading = false,
+                        lastSaleId = invoiceId,
                         lastSaleItems = currentSaleItems,
                         lastSaleTotal = totalSaleAmount,
+                        lastCustomerName = customerName,
+                        lastDriverName = deliveryDriverName,
+                        lastPaymentMethod = paymentMethod,
+                        lastCustomerCredit = customerCredit,
+                        lastCustomerCreditLimit = customerCreditLimit,
                         cartItems = emptyList(),
                         totalAmount = 0.0,
-                        checkoutMessage = "Success! Invoice: ${result.getOrNull()}"
+                        checkoutMessage = "Success! Invoice: $invoiceId"
                     )
                 } else {
                     state.copy(

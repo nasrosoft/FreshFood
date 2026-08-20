@@ -116,10 +116,13 @@ fun PosScreen(
 
     LaunchedEffect(uiState.checkoutMessage) {
         if (uiState.checkoutMessage?.startsWith("Success") == true && createDelivery) {
+            val orderId = uiState.lastSaleId
+            val shortId = orderId?.take(8)?.uppercase() ?: ""
             com.devsoft.devsoft.utils.NotificationHelper.showDeliveryNotification(
                 context = context,
                 title = "Nouvelle livraison assignée 🚚",
-                message = "Commande de ${selectedCustomer?.name ?: "Client"} prête pour la livraison."
+                message = "Commande ${if (shortId.isNotBlank()) "#$shortId " else ""}de ${selectedCustomer?.name ?: "Client"} prête pour la livraison.",
+                orderId = orderId
             )
         }
     }
@@ -137,17 +140,33 @@ fun PosScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Invoice", fontWeight = FontWeight.Bold)
-                    Text("✓ Completed", color = StatusSuccess, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    val finalDriverName = uiState.lastDriverName ?: (if (selectedDriver != null) {
+                        listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email }
+                    } else null)
+                    val isDeliveryOrder = !finalDriverName.isNullOrBlank()
+
+                    Text(if (isDeliveryOrder) "Order Created" else "Invoice", fontWeight = FontWeight.Bold)
+                    Text(
+                        if (isDeliveryOrder) "🚚 Pending Delivery" else "✓ Completed", 
+                        color = if (isDeliveryOrder) PrimaryBlue else StatusSuccess, 
+                        fontSize = 13.sp, 
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Customer: ${selectedCustomer?.name ?: "Guest"}", fontWeight = FontWeight.SemiBold, color = TextDark)
-                    Text("Payment Method: $selectedPaymentMethod", style = MaterialTheme.typography.bodySmall, color = TextMuted)
-                    if (selectedDriver != null) {
-                        val driverName = listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email ?: "Driver" }
-                        Text("Driver: $driverName", style = MaterialTheme.typography.bodySmall, color = PrimaryBlue, fontWeight = FontWeight.Medium)
+                    val finalCustomerName = uiState.lastCustomerName ?: selectedCustomer?.name ?: "Guest"
+                    val finalPaymentMethod = uiState.lastPaymentMethod ?: selectedPaymentMethod
+                    val finalDriverName = uiState.lastDriverName ?: (if (selectedDriver != null) {
+                        listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email }
+                    } else null)
+                    val isDeliveryOrder = !finalDriverName.isNullOrBlank()
+
+                    Text("Customer: $finalCustomerName", fontWeight = FontWeight.SemiBold, color = TextDark)
+                    Text("Payment Method: $finalPaymentMethod", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    if (!finalDriverName.isNullOrBlank()) {
+                        Text("Driver: $finalDriverName", style = MaterialTheme.typography.bodySmall, color = PrimaryBlue, fontWeight = FontWeight.Medium)
                     }
                     
                     Spacer(modifier = Modifier.height(12.dp))
@@ -158,10 +177,21 @@ fun PosScreen(
                         items(items) { cartItem ->
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("${cartItem.quantity}x ${cartItem.product.name}", style = MaterialTheme.typography.bodyMedium, color = TextDark)
-                                Text("${cartItem.quantity * cartItem.product.selling_price} DA", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                                Text(
+                                    "${cartItem.quantity}x ${cartItem.product.name}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextDark,
+                                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                                )
+                                Text(
+                                    "${String.format(java.util.Locale.US, "%,.1f", cartItem.quantity * cartItem.product.selling_price)} DA",
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryBlue,
+                                    softWrap = false
+                                )
                             }
                         }
                     }
@@ -173,6 +203,29 @@ fun PosScreen(
                     ) {
                         Text("TOTAL", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         Text("${String.format(java.util.Locale.US, "%,.0f", total)} DA", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = PrimaryBlueDark)
+                    }
+
+                    val creditVal = uiState.lastCustomerCredit ?: selectedCustomer?.current_credit
+                    if (creditVal != null && creditVal > 0) {
+                        val prevCred = creditVal
+                        Spacer(modifier = Modifier.height(4.dp))
+                        if (isDeliveryOrder) {
+                            Text(
+                                "Client Current Credit: ${String.format(java.util.Locale.US, "%,.0f", prevCred)} DA",
+                                color = StatusWarning,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        } else {
+                            val isCredit = finalPaymentMethod == "CREDIT"
+                            val newCred = prevCred + (if (isCredit) total else 0.0)
+                            Text(
+                                "Total Client Credit: ${String.format(java.util.Locale.US, "%,.0f", newCred)} DA",
+                                color = StatusWarning,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             },
@@ -188,17 +241,22 @@ fun PosScreen(
             },
             dismissButton = {
                 TextButton(onClick = {
-                    val driverName = if (selectedDriver != null) {
+                    val finalCustomerName = uiState.lastCustomerName ?: selectedCustomer?.name ?: "Guest"
+                    val finalPaymentMethod = uiState.lastPaymentMethod ?: selectedPaymentMethod
+                    val finalDriverName = uiState.lastDriverName ?: (if (selectedDriver != null) {
                         listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email }
-                    } else null
+                    } else null)
 
                     val uri = PdfReceiptGenerator.generateAndGetUri(
                         context = context,
                         cartItems = items,
                         totalAmount = total,
-                        customerName = selectedCustomer?.name ?: "Guest",
-                        driverName = driverName,
-                        paymentMethod = selectedPaymentMethod
+                        customerName = finalCustomerName,
+                        driverName = finalDriverName,
+                        paymentMethod = finalPaymentMethod,
+                        orderId = uiState.lastSaleId,
+                        customerCurrentCredit = uiState.lastCustomerCredit ?: selectedCustomer?.current_credit,
+                        customerCreditLimit = uiState.lastCustomerCreditLimit ?: selectedCustomer?.credit_limit
                     )
                     if (uri != null) {
                         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -570,7 +628,20 @@ fun PosScreen(
             confirmButton = {
                 Button(onClick = {
                     showPaymentMethodDialog = false
-                    viewModel.checkout(selectedPaymentMethod, selectedCustomer?.id, createDelivery, selectedDriver?.id)
+                    val driverFullName = if (selectedDriver != null) {
+                        listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email }
+                    } else null
+
+                    viewModel.checkout(
+                        paymentMethod = selectedPaymentMethod,
+                        customerId = selectedCustomer?.id,
+                        customerName = selectedCustomer?.name ?: "Guest",
+                        customerCredit = selectedCustomer?.current_credit,
+                        customerCreditLimit = selectedCustomer?.credit_limit,
+                        createDelivery = createDelivery,
+                        deliveryDriverId = selectedDriver?.id,
+                        deliveryDriverName = driverFullName
+                    )
                 }) {
                     Text(stringResource(R.string.confirm_and_checkout))
                 }

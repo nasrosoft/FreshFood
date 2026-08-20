@@ -78,4 +78,7 @@ dependencies {
     
     // Coil Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // WorkManager for background delivery notifications when app is closed
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }

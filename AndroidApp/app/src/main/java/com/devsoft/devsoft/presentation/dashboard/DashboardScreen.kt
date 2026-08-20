@@ -197,19 +197,30 @@ fun DashboardScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        val salesGrowthStr = if (uiState.salesGrowthPercentage != null) {
+                            val sign = if (uiState.salesGrowthPercentage!! >= 0) "+" else ""
+                            "$sign${String.format(Locale.US, "%.1f", uiState.salesGrowthPercentage)}%"
+                        } else ""
+                        val salesBadgeText = if (uiState.timeRange == DashboardTimeRange.ALL) {
+                            stringResource(R.string.all_time)
+                        } else {
+                            stringResource(R.string.vs_label, salesGrowthStr, stringResource(uiState.previousPeriodLabelRes))
+                        }
+                        val isPositiveGrowth = uiState.salesGrowthPercentage?.let { it >= 0 } ?: true
+
                         MetricCard(
                             title = stringResource(R.string.todays_sales),
                             value = "${String.format(Locale.US, "%,.0f", uiState.salesTotal)} DA",
-                            badgeText = stringResource(R.string.vs_yesterday),
-                            badgeColor = StatusSuccess,
-                            badgeContainer = StatusSuccessContainer,
+                            badgeText = salesBadgeText,
+                            badgeColor = if (isPositiveGrowth) StatusSuccess else StatusError,
+                            badgeContainer = if (isPositiveGrowth) StatusSuccessContainer else StatusErrorContainer,
                             onClick = { dashboardViewModel.showDetail(DashboardDetailType.SALES) }
                         )
 
                         MetricCard(
                             title = "${stringResource(R.string.profit_day)} (${stringResource(uiState.timeRange.stringRes)})",
                             value = "${String.format(Locale.US, "%,.0f", uiState.profitTotal)} DA",
-                            badgeText = stringResource(R.string.est_margin),
+                            badgeText = stringResource(R.string.est_margin, String.format(Locale.US, "%.1f", uiState.avgMarginPercentage)),
                             badgeColor = PrimaryBlue,
                             badgeContainer = PrimaryBlueContainer,
                             onClick = { dashboardViewModel.showDetail(DashboardDetailType.PROFIT) }
@@ -484,6 +495,9 @@ private fun DeliveryCounterItem(count: String, label: String, color: Color) {
 
 @Composable
 private fun SalesCurveChart(modifier: Modifier = Modifier) {
+    val pointSurfaceColor = CardSurface
+    val chartPrimaryColor = PrimaryBlue
+
     Canvas(modifier = modifier) {
         val width = size.width
         val height = size.height
@@ -518,21 +532,21 @@ private fun SalesCurveChart(modifier: Modifier = Modifier) {
         drawPath(
             path = fillPath,
             brush = Brush.verticalGradient(
-                colors = listOf(PrimaryBlue.copy(alpha = 0.25f), PrimaryBlue.copy(alpha = 0.0f))
+                colors = listOf(chartPrimaryColor.copy(alpha = 0.25f), chartPrimaryColor.copy(alpha = 0.0f))
             )
         )
 
         // Draw curve line
         drawPath(
             path = path,
-            color = PrimaryBlue,
+            color = chartPrimaryColor,
             style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
         )
 
         // Draw points
         for (point in points) {
-            drawCircle(color = CardSurface, radius = 5.dp.toPx(), center = point)
-            drawCircle(color = PrimaryBlue, radius = 3.dp.toPx(), center = point)
+            drawCircle(color = pointSurfaceColor, radius = 5.dp.toPx(), center = point)
+            drawCircle(color = chartPrimaryColor, radius = 3.dp.toPx(), center = point)
         }
     }
 }
@@ -704,7 +718,7 @@ fun ProfitDetailDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Estimated Profit Margin", style = MaterialTheme.typography.bodyMedium)
-                            Text("20.0%", fontWeight = FontWeight.Bold, color = StatusSuccess)
+                            Text("${String.format(Locale.US, "%.1f", profitTotal / revenueTotal * 100)}%", fontWeight = FontWeight.Bold, color = StatusSuccess)
                         }
                         Divider(modifier = Modifier.padding(vertical = 8.dp), color = CardBorder)
                         Row(
@@ -731,7 +745,7 @@ fun ProfitDetailDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(sales) { sale ->
-                        val itemProfit = sale.total_amount * 0.20
+                        val itemProfit = sale.total_amount * (profitTotal / revenueTotal)
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),

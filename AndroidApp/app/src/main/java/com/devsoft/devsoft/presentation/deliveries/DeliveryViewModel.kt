@@ -70,14 +70,49 @@ class DeliveryViewModel(
         }
     }
 
-    fun updateDeliveryItemsAndComplete(orderId: String, modifiedQuantities: Map<String, Int>) {
+    fun updateDeliveryItemsAndComplete(orderId: String, modifiedQuantities: Map<String, Int>, finalPaymentMethod: String? = null) {
         viewModelScope.launch {
             try {
-                repository.updateDeliveryItemsAndComplete(orderId, modifiedQuantities)
+                repository.updateDeliveryItemsAndComplete(orderId, modifiedQuantities, finalPaymentMethod)
                 loadDeliveries() // Refresh UI after completion
             } catch (e: Exception) {
                 e.printStackTrace()
                 _errorMessage.emit("Error updating delivery: ${e.message}")
+            }
+        }
+    }
+
+    fun checkAndNotifyNewDeliveries(context: android.content.Context, currentUserId: String?) {
+        viewModelScope.launch {
+            try {
+                repository.getDeliveries().collect { deliveries ->
+                    // Update state if we are currently success or loading
+                    if (_uiState.value !is DeliveryUiState.Loading) {
+                        _uiState.value = DeliveryUiState.Success(deliveries)
+                    }
+                    
+                    deliveries.forEach { item ->
+                        val isAssignedToUser = item.order.delivery_employee_id == currentUserId || currentUserId == null
+                        val isPendingOrAssigned = item.order.status.equals("PENDING", ignoreCase = true) ||
+                                item.order.status.equals("ASSIGNED", ignoreCase = true)
+
+                        if (isAssignedToUser && isPendingOrAssigned) {
+                            val orderId = item.order.id
+                            if (!com.devsoft.devsoft.utils.NotificationHelper.isOrderNotified(context, orderId)) {
+                                val customerName = item.customer?.name ?: "Client"
+                                val shortId = orderId.take(8).uppercase()
+                                com.devsoft.devsoft.utils.NotificationHelper.showDeliveryNotification(
+                                    context = context,
+                                    title = "Nouvelle livraison assignée 🚚",
+                                    message = "Commande #$shortId pour $customerName prête pour la livraison.",
+                                    orderId = orderId
+                                )
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore transient network errors during background poll
             }
         }
     }
