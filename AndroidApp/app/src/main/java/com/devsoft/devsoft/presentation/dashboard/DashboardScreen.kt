@@ -161,7 +161,9 @@ fun DashboardScreen(
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        com.devsoft.devsoft.presentation.components.GlobalSyncButton()
+                        com.devsoft.devsoft.presentation.components.GlobalSyncButton(
+                            onSyncClick = { dashboardViewModel.loadDashboard() }
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier

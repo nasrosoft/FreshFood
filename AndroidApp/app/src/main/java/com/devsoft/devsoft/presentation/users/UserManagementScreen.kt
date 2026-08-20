@@ -26,6 +26,7 @@ fun UserManagementScreen(
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var editingProfile by remember { mutableStateOf<Profile?>(null) }
+    var profileToDelete by remember { mutableStateOf<Profile?>(null) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
@@ -198,10 +199,7 @@ fun UserManagementScreen(
                                     Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
                                 }
                                 IconButton(onClick = {
-                                    scope.launch {
-                                        profileRepository.deleteProfile(profile.id)
-                                        loadProfiles()
-                                    }
+                                    profileToDelete = profile
                                 }) {
                                     Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                                 }
@@ -210,6 +208,36 @@ fun UserManagementScreen(
                     }
                 }
             }
+        }
+
+        if (profileToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { profileToDelete = null },
+                title = { Text(androidx.compose.ui.res.stringResource(com.devsoft.devsoft.R.string.delete_user_title)) },
+                text = { Text(androidx.compose.ui.res.stringResource(com.devsoft.devsoft.R.string.delete_user_confirm)) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val user = profileToDelete
+                            profileToDelete = null
+                            if (user != null) {
+                                scope.launch {
+                                    profileRepository.deleteProfile(user.id)
+                                    loadProfiles()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(androidx.compose.ui.res.stringResource(com.devsoft.devsoft.R.string.delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { profileToDelete = null }) {
+                        Text(androidx.compose.ui.res.stringResource(com.devsoft.devsoft.R.string.cancel))
+                    }
+                }
+            )
         }
     }
 }

@@ -112,7 +112,9 @@ fun DeliveryDashboardScreen(
                             )
                         }
 
-                        com.devsoft.devsoft.presentation.components.GlobalSyncButton()
+                        com.devsoft.devsoft.presentation.components.GlobalSyncButton(
+                            onSyncClick = { viewModel.loadDeliveries() }
+                        )
                     }
 
                     // Filter Tab Pills (Responsive Scrollable Row)
@@ -344,6 +346,7 @@ fun DeliveryDashboardScreen(
                             items(filteredDeliveries) { delivery ->
                                 DeliveryCardModern(
                                     delivery = delivery,
+                                    showDelete = !isDriver && delivery.order.status != "DELIVERED",
                                     onClick = { onDeliveryClick(delivery.order.id) },
                                     onDelete = { orderToDelete = delivery.order.id }
                                 )
@@ -381,6 +384,7 @@ fun DeliveryDashboardScreen(
 @Composable
 fun DeliveryCardModern(
     delivery: DeliveryOrderWithDetails,
+    showDelete: Boolean = true,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -406,7 +410,15 @@ fun DeliveryCardModern(
                     color = PrimaryBlue,
                     fontSize = 13.sp
                 )
-                StatusBadge(status = delivery.order.status)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusBadge(status = delivery.order.status)
+                    if (showDelete) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = StatusError, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))

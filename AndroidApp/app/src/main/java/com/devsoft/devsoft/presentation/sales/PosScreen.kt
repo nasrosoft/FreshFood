@@ -247,6 +247,11 @@ fun PosScreen(
                         listOfNotNull(selectedDriver?.first_name, selectedDriver?.last_name).joinToString(" ").ifBlank { selectedDriver?.email }
                     } else null)
 
+                    val isDeliveryOrder = uiState.lastIsDelivery ?: createDelivery
+                    val finalOrderStatus = if (isDeliveryOrder) {
+                        if (finalDriverName != null) "ASSIGNED" else "PENDING"
+                    } else null
+
                     val uri = PdfReceiptGenerator.generateAndGetUri(
                         context = context,
                         cartItems = items,
@@ -256,7 +261,8 @@ fun PosScreen(
                         paymentMethod = finalPaymentMethod,
                         orderId = uiState.lastSaleId,
                         customerCurrentCredit = uiState.lastCustomerCredit ?: selectedCustomer?.current_credit,
-                        customerCreditLimit = uiState.lastCustomerCreditLimit ?: selectedCustomer?.credit_limit
+                        customerCreditLimit = uiState.lastCustomerCreditLimit ?: selectedCustomer?.credit_limit,
+                        orderStatus = finalOrderStatus
                     )
                     if (uri != null) {
                         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {

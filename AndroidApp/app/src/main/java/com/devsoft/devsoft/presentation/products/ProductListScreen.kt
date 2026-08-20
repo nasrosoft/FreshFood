@@ -62,6 +62,7 @@ fun ProductListScreen(
     var stockExpiration by remember { mutableStateOf("") }
     
     var selectedProductForEdit by remember { mutableStateOf<Product?>(null) }
+    var productToDelete by remember { mutableStateOf<Product?>(null) }
     var editName by remember { mutableStateOf("") }
     var editBarcode by remember { mutableStateOf("") }
     var editPurchasePrice by remember { mutableStateOf("") }
@@ -132,7 +133,9 @@ fun ProductListScreen(
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            com.devsoft.devsoft.presentation.components.GlobalSyncButton()
+                            com.devsoft.devsoft.presentation.components.GlobalSyncButton(
+                                onSyncClick = { viewModel.loadProducts() }
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(onClick = { onAddProductClick(null) }) {
                                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add), tint = PrimaryBlue)
@@ -437,23 +440,66 @@ fun ProductListScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    val updatedProduct = selectedProductForEdit!!.copy(
-                        name = editName,
-                        barcode = editBarcode.takeIf { it.isNotBlank() },
-                        purchase_price = editPurchasePrice.toDoubleOrNull() ?: selectedProductForEdit!!.purchase_price,
-                        selling_price = editSellingPrice.toDoubleOrNull() ?: selectedProductForEdit!!.selling_price,
-                        current_stock = editStock.toIntOrNull() ?: selectedProductForEdit!!.current_stock
-                    )
-                    viewModel.updateProduct(updatedProduct)
-                    selectedProductForEdit = null
-                }) {
-                    Text(stringResource(R.string.save))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(
+                        onClick = {
+                            productToDelete = selectedProductForEdit
+                        }
+                    ) {
+                        Text(stringResource(R.string.delete), color = StatusError)
+                    }
+                    Button(onClick = {
+                        val updatedProduct = selectedProductForEdit!!.copy(
+                            name = editName,
+                            barcode = editBarcode.takeIf { it.isNotBlank() },
+                            purchase_price = editPurchasePrice.toDoubleOrNull() ?: selectedProductForEdit!!.purchase_price,
+                            selling_price = editSellingPrice.toDoubleOrNull() ?: selectedProductForEdit!!.selling_price,
+                            current_stock = editStock.toIntOrNull() ?: selectedProductForEdit!!.current_stock
+                        )
+                        viewModel.updateProduct(updatedProduct)
+                        selectedProductForEdit = null
+                    }) {
+                        Text(stringResource(R.string.save))
+                    }
                 }
             },
             dismissButton = {
                 TextButton(onClick = { selectedProductForEdit = null }) { 
                     Text(stringResource(R.string.cancel)) 
+                }
+            }
+        )
+    }
+
+    if (productToDelete != null) {
+        val targetProduct = productToDelete!!
+        AlertDialog(
+            onDismissRequest = { productToDelete = null },
+            title = { Text(stringResource(R.string.delete_product_title), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.delete_product_confirm)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteProduct(targetProduct.id)
+                        productToDelete = null
+                        if (selectedProductForEdit?.id == targetProduct.id) {
+                            selectedProductForEdit = null
+                        }
+                        if (selectedProductForDetail?.id == targetProduct.id) {
+                            selectedProductForDetail = null
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusError)
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { productToDelete = null }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

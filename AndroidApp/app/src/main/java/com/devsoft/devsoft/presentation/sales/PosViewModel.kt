@@ -37,6 +37,7 @@ data class PosUiState(
     val lastPaymentMethod: String? = null,
     val lastCustomerCredit: Double? = null,
     val lastCustomerCreditLimit: Double? = null,
+    val lastIsDelivery: Boolean? = null,
     val deliveryDrivers: List<Profile> = emptyList()
 )
 
@@ -136,7 +137,8 @@ class PosViewModel(
                 lastDriverName = null,
                 lastPaymentMethod = null,
                 lastCustomerCredit = null,
-                lastCustomerCreditLimit = null
+                lastCustomerCreditLimit = null,
+                lastIsDelivery = null
             ) 
         }
     }
@@ -152,7 +154,8 @@ class PosViewModel(
                 lastDriverName = null,
                 lastPaymentMethod = null,
                 lastCustomerCredit = null,
-                lastCustomerCreditLimit = null
+                lastCustomerCreditLimit = null,
+                lastIsDelivery = null
             ) 
         }
     }
@@ -222,6 +225,7 @@ class PosViewModel(
                         lastPaymentMethod = paymentMethod,
                         lastCustomerCredit = customerCredit,
                         lastCustomerCreditLimit = customerCreditLimit,
+                        lastIsDelivery = createDelivery,
                         cartItems = emptyList(),
                         totalAmount = 0.0,
                         checkoutMessage = "Success! Invoice: $invoiceId"

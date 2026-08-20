@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -70,7 +71,10 @@ class MainActivity : ComponentActivity() {
             supabaseKey = "sb_publishable_oln733bAmVovVJLPQ_BFvQ_AaEr1D0Q"
         ) {
             install(Postgrest)
-            install(Auth)
+            install(Auth) {
+                alwaysAutoRefresh = true
+                autoLoadFromStorage = true
+            }
             install(Storage)
             defaultSerializer = KotlinXSerializer(Json { 
                 ignoreUnknownKeys = true 
@@ -111,49 +115,62 @@ class MainActivity : ComponentActivity() {
                         val authViewModel: AuthViewModel = viewModel(factory = authFactory)
                         val authState by authViewModel.authState.collectAsState()
 
-                        if (authState is AuthState.Authenticated) {
-                            val userRole = (authState as AuthState.Authenticated).role
-                            val userId = (authState as AuthState.Authenticated).userId
-
-                            LaunchedEffect(userId, userRole) {
-                                com.devsoft.devsoft.utils.NotificationHelper.persistCurrentUser(this@MainActivity, userId, userRole)
-                                if (userRole == "DELIVERY" && !userId.isNullOrBlank()) {
-                                    com.devsoft.devsoft.utils.NotificationHelper.scheduleBackgroundDeliverySync(this@MainActivity)
-                                } else {
-                                    com.devsoft.devsoft.utils.NotificationHelper.cancelBackgroundDeliverySync(this@MainActivity)
+                        when (authState) {
+                            is AuthState.Checking -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    androidx.compose.material3.CircularProgressIndicator(
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
+                            is AuthState.Authenticated -> {
+                                val userRole = (authState as AuthState.Authenticated).role
+                                val userId = (authState as AuthState.Authenticated).userId
 
-                            MainAppScreen(
-                                userId = userId,
-                                userRole = userRole,
-                                dashboardViewModel = viewModel(factory = dashFactory),
-                                productsViewModel = viewModel(factory = prodFactory),
-                                posViewModel = viewModel(factory = posFactory),
-                                customersViewModel = viewModel(factory = custFactory),
-                                purchaseViewModel = viewModel(factory = purchaseFactory),
-                                deliveryViewModel = viewModel(factory = deliveryFactory),
-                                inventoryViewModel = viewModel(factory = inventoryFactory),
-                                returnsViewModel = viewModel(factory = returnsFactory),
-                                profileRepository = profileRepo,
-                                activationRepository = activationRepo,
-                                targetDeliveryId = targetDeliveryOrderId,
-                                onTargetDeliveryHandled = { targetDeliveryOrderId = null },
-                                onLogout = { 
+                                LaunchedEffect(userId, userRole) {
+                                    com.devsoft.devsoft.utils.NotificationHelper.persistCurrentUser(this@MainActivity, userId, userRole)
+                                    if (userRole == "DELIVERY" && !userId.isNullOrBlank()) {
+                                        com.devsoft.devsoft.utils.NotificationHelper.scheduleBackgroundDeliverySync(this@MainActivity)
+                                    } else {
+                                        com.devsoft.devsoft.utils.NotificationHelper.cancelBackgroundDeliverySync(this@MainActivity)
+                                    }
+                                }
+
+                                MainAppScreen(
+                                    userId = userId,
+                                    userRole = userRole,
+                                    dashboardViewModel = viewModel(factory = dashFactory),
+                                    productsViewModel = viewModel(factory = prodFactory),
+                                    posViewModel = viewModel(factory = posFactory),
+                                    customersViewModel = viewModel(factory = custFactory),
+                                    purchaseViewModel = viewModel(factory = purchaseFactory),
+                                    deliveryViewModel = viewModel(factory = deliveryFactory),
+                                    inventoryViewModel = viewModel(factory = inventoryFactory),
+                                    returnsViewModel = viewModel(factory = returnsFactory),
+                                    profileRepository = profileRepo,
+                                    activationRepository = activationRepo,
+                                    targetDeliveryId = targetDeliveryOrderId,
+                                    onTargetDeliveryHandled = { targetDeliveryOrderId = null },
+                                    onLogout = { 
+                                        com.devsoft.devsoft.utils.NotificationHelper.persistCurrentUser(this@MainActivity, null, null)
+                                        com.devsoft.devsoft.utils.NotificationHelper.cancelBackgroundDeliverySync(this@MainActivity)
+                                        authViewModel.logout() 
+                                    }
+                                )
+                            }
+                            else -> {
+                                LaunchedEffect(Unit) {
                                     com.devsoft.devsoft.utils.NotificationHelper.persistCurrentUser(this@MainActivity, null, null)
                                     com.devsoft.devsoft.utils.NotificationHelper.cancelBackgroundDeliverySync(this@MainActivity)
-                                    authViewModel.logout() 
                                 }
-                            )
-                        } else {
-                            LaunchedEffect(Unit) {
-                                com.devsoft.devsoft.utils.NotificationHelper.persistCurrentUser(this@MainActivity, null, null)
-                                com.devsoft.devsoft.utils.NotificationHelper.cancelBackgroundDeliverySync(this@MainActivity)
+                                LoginScreen(
+                                    viewModel = authViewModel,
+                                    onLoginSuccess = {}
+                                )
                             }
-                            LoginScreen(
-                                viewModel = authViewModel,
-                                onLoginSuccess = {}
-                            )
                         }
                     }
                 }

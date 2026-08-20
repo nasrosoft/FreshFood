@@ -171,4 +171,10 @@
     <string name="selling_price">Prix de Vente</string>
     <string name="expiration_date_format">Date d\'Expiration (AAAA-MM-JJ)</string>
     <string name="visual_food_emoji">Visuel : %s (Emoji)</string>
+    <string name="delete_product_title">Supprimer le produit</string>
+    <string name="delete_product_confirm">Êtes-vous sûr de vouloir supprimer définitivement ce produit ?</string>
+    <string name="delete_customer_title">Supprimer le client</string>
+    <string name="delete_customer_confirm">Êtes-vous sûr de vouloir supprimer définitivement ce client ?</string>
+    <string name="delete_user_title">Supprimer l\'utilisateur</string>
+    <string name="delete_user_confirm">Êtes-vous sûr de vouloir supprimer définitivement cet utilisateur ?</string>
 </resources>

@@ -28,6 +28,26 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun restoreSession(): Result<String?> {
+        return try {
+            supabase.auth.awaitInitialization()
+            val currentSession = supabase.auth.currentSessionOrNull()
+            if (currentSession != null) {
+                try {
+                    supabase.auth.refreshCurrentSession()
+                } catch (e: Exception) {
+                    // Ignore network failure on refresh, use cached session
+                }
+                val userId = supabase.auth.currentSessionOrNull()?.user?.id ?: currentSession.user?.id
+                Result.success(userId)
+            } else {
+                Result.success(null)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override fun isUserLoggedIn(): Boolean {
         return supabase.auth.currentSessionOrNull() != null
     }

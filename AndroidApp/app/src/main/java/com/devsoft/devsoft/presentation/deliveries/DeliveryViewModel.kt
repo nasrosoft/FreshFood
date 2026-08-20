@@ -30,7 +30,7 @@ class DeliveryViewModel(
     val errorMessage = _errorMessage.asSharedFlow()
 
     init {
-        // loadDeliveries is called from LaunchedEffect in the UI
+        loadDeliveries() // Called immediately so notification intents can access loaded data
     }
 
     fun loadDeliveries() {

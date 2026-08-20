@@ -43,6 +43,12 @@ class ProductRepositoryImpl(
         }
     }
 
+    override suspend fun deleteProduct(id: String) {
+        supabase.postgrest["products"].delete {
+            filter { eq("id", id) }
+        }
+    }
+
     override suspend fun getStockBatchesForProduct(productId: String): List<StockBatch> {
         return supabase.postgrest["stock_batches"]
             .select { filter { eq("product_id", productId) } }

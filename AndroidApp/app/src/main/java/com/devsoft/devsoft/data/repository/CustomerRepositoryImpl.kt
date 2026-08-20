@@ -29,6 +29,12 @@ class CustomerRepositoryImpl(
         supabase.postgrest["customers"].insert(customer)
     }
 
+    override suspend fun deleteCustomer(id: String) {
+        supabase.postgrest["customers"].delete {
+            filter { eq("id", id) }
+        }
+    }
+
     override suspend fun getCustomerCreditDetails(customerId: String): List<CustomerCreditDetail> {
         return try {
             supabase.postgrest["customer_credit_details"]

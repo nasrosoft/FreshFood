@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed class AuthState {
+    object Checking : AuthState()
     object Idle : AuthState()
     object Loading : AuthState()
     data class Authenticated(val role: String, val userId: String) : AuthState()
@@ -21,7 +22,7 @@ class AuthViewModel(
     private val repository: AuthRepository,
     private val profileRepository: com.devsoft.devsoft.domain.repository.ProfileRepository
 ) : ViewModel() {
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Checking)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
@@ -30,13 +31,16 @@ class AuthViewModel(
 
     private fun checkAuthStatus() {
         viewModelScope.launch {
-            if (repository.isUserLoggedIn()) {
-                val userId = repository.getCurrentUserId()
-                if (userId != null) {
+            _authState.value = AuthState.Checking
+            val result = repository.restoreSession()
+            val userId = result.getOrNull()
+            if (userId != null) {
+                try {
                     val profile = profileRepository.getProfileById(userId)
                     _authState.value = AuthState.Authenticated(profile?.role ?: "SELLER", userId)
-                } else {
-                    _authState.value = AuthState.Idle
+                } catch (e: Exception) {
+                    // Fallback to authenticated state even if offline
+                    _authState.value = AuthState.Authenticated("SELLER", userId)
                 }
             } else {
                 _authState.value = AuthState.Idle

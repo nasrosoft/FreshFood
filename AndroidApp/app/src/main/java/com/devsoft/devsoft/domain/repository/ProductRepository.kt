@@ -10,6 +10,7 @@ interface ProductRepository {
     suspend fun getProductByBarcode(barcode: String): Product?
     suspend fun insertProduct(product: Product)
     suspend fun updateProduct(product: Product)
+    suspend fun deleteProduct(id: String)
     suspend fun getStockBatchesForProduct(productId: String): List<StockBatch>
     suspend fun insertStockBatch(stockBatch: StockBatch)
 }

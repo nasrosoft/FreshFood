@@ -12,10 +12,11 @@ import androidx.compose.ui.platform.LocalContext
 
 
 @Composable
-fun GlobalSyncButton(tint: Color = MaterialTheme.colorScheme.onPrimary) {
+fun GlobalSyncButton(tint: Color = MaterialTheme.colorScheme.onPrimary, onSyncClick: () -> Unit = {}) {
     val context = LocalContext.current
     IconButton(onClick = {
-        Toast.makeText(context, "Data is live via Supabase!", Toast.LENGTH_SHORT).show()
+        onSyncClick()
+        Toast.makeText(context, "Data sync requested!", Toast.LENGTH_SHORT).show()
     }) {
         Icon(Icons.Filled.Refresh, contentDescription = "Sync", tint = tint)
     }

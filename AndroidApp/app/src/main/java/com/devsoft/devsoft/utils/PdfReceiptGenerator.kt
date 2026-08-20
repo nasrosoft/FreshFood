@@ -45,6 +45,7 @@ object PdfReceiptGenerator {
         customerName: String? = null,
         paymentMethod: String? = null,
         driverName: String? = null,
+        orderStatus: String? = null,
         items: List<ReceiptItem>,
         totalAmount: Double,
         customerCurrentCredit: Double? = null,
@@ -55,7 +56,7 @@ object PdfReceiptGenerator {
         val pdfDocument = PdfDocument()
         
         val hasCredit = customerCurrentCredit != null && (customerCurrentCredit > 0 || isCreditSale)
-        val calculatedHeight = 280 + (items.size * 18) + (if (hasCredit) 90 else 0) + (if (!driverName.isNullOrBlank()) 16 else 0)
+        val calculatedHeight = 280 + (items.size * 18) + (if (hasCredit) 90 else 0) + (if (!driverName.isNullOrBlank()) 16 else 0) + (if (!orderStatus.isNullOrBlank()) 16 else 0)
         val pageHeight = calculatedHeight.coerceAtLeast(520)
         
         val pageInfo = PdfDocument.PageInfo.Builder(300, pageHeight, 1).create()
@@ -130,6 +131,11 @@ object PdfReceiptGenerator {
             "fr" -> "Livreur :"
             else -> "Driver:"
         }
+        val statusLabel = when (lang) {
+            "ar" -> "الحالة / Statut:"
+            "fr" -> "Statut :"
+            else -> "Status:"
+        }
 
         val rawMethod = paymentMethod?.uppercase() ?: "CASH"
         val translatedPaymentMethod = when {
@@ -168,6 +174,21 @@ object PdfReceiptGenerator {
             canvas.drawText(driverLabel, xMargin, yPosition, paint)
             paint.isFakeBoldText = false
             canvas.drawText(driverName, xMargin + labelOffset, yPosition, paint)
+        }
+
+        if (!orderStatus.isNullOrBlank()) {
+            val translatedStatus = when (orderStatus) {
+                "DELIVERED" -> if (lang == "ar") "مُسلّم" else if (lang == "fr") "Livré" else "Delivered"
+                "OUT_FOR_DELIVERY" -> if (lang == "ar") "قيد التوصيل" else if (lang == "fr") "En cours de livraison" else "Out for Delivery"
+                "ASSIGNED" -> if (lang == "ar") "مُعيّن" else if (lang == "fr") "Assigné" else "Assigned"
+                "PENDING" -> if (lang == "ar") "في الانتظار" else if (lang == "fr") "En attente" else "Pending"
+                else -> orderStatus
+            }
+            yPosition += 14f
+            paint.isFakeBoldText = true
+            canvas.drawText(statusLabel, xMargin, yPosition, paint)
+            paint.isFakeBoldText = false
+            canvas.drawText(translatedStatus, xMargin + labelOffset, yPosition, paint)
         }
 
         // Divider
@@ -354,7 +375,8 @@ object PdfReceiptGenerator {
         orderId: String? = null,
         storeName: String? = null,
         customerCurrentCredit: Double? = null,
-        customerCreditLimit: Double? = null
+        customerCreditLimit: Double? = null,
+        orderStatus: String? = null
     ): android.net.Uri? {
         val receiptItems = cartItems.map {
             ReceiptItem(
@@ -372,6 +394,7 @@ object PdfReceiptGenerator {
             customerName = customerName,
             paymentMethod = paymentMethod,
             driverName = driverName,
+            orderStatus = orderStatus,
             items = receiptItems,
             totalAmount = totalAmount,
             customerCurrentCredit = customerCurrentCredit,
@@ -411,6 +434,7 @@ object PdfReceiptGenerator {
             customerName = details.customer?.name ?: "Customer",
             paymentMethod = paymentMethod,
             driverName = driverFullName,
+            orderStatus = details.order.status,
             items = receiptItems,
             totalAmount = total,
             customerCurrentCredit = details.customer?.current_credit,

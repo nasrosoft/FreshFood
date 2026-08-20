@@ -37,6 +37,7 @@ fun CustomersScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedCustomerForDetail by remember { mutableStateOf<Customer?>(null) }
     var selectedCustomerForPayment by remember { mutableStateOf<Customer?>(null) }
+    var customerToDelete by remember { mutableStateOf<Customer?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     
     LaunchedEffect(Unit) {
@@ -68,7 +69,9 @@ fun CustomersScreen(
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            com.devsoft.devsoft.presentation.components.GlobalSyncButton()
+                            com.devsoft.devsoft.presentation.components.GlobalSyncButton(
+                                onSyncClick = { viewModel.loadCustomers() }
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(onClick = onAddCustomerClick) {
                                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add), tint = PrimaryBlue)
@@ -178,8 +181,15 @@ fun CustomersScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(stringResource(R.string.customer_details), fontWeight = FontWeight.Bold)
-                    IconButton(onClick = { selectedCustomerForDetail = null }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close")
+                    Row {
+                        IconButton(onClick = {
+                            customerToDelete = customer
+                        }) {
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete), tint = StatusError)
+                        }
+                        IconButton(onClick = { selectedCustomerForDetail = null }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Close")
+                        }
                     }
                 }
             },
@@ -425,6 +435,34 @@ fun CustomersScreen(
             dismissButton = {
                 TextButton(onClick = { selectedCustomerForPayment = null }) { 
                     Text(stringResource(R.string.cancel)) 
+                }
+            }
+        )
+    }
+
+    if (customerToDelete != null) {
+        val targetCustomer = customerToDelete!!
+        AlertDialog(
+            onDismissRequest = { customerToDelete = null },
+            title = { Text(stringResource(R.string.delete_customer_title), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.delete_customer_confirm)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteCustomer(targetCustomer.id)
+                        customerToDelete = null
+                        if (selectedCustomerForDetail?.id == targetCustomer.id) {
+                            selectedCustomerForDetail = null
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusError)
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { customerToDelete = null }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

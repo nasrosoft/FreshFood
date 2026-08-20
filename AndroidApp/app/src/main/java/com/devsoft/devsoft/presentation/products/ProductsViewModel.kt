@@ -125,6 +125,17 @@ class ProductsViewModel(
         }
     }
 
+    fun deleteProduct(id: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteProduct(id)
+                loadProducts()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Failed to delete product")
+            }
+        }
+    }
+
     suspend fun getLotCount(productId: String): Int {
         return try {
             repository.getStockBatchesForProduct(productId).size

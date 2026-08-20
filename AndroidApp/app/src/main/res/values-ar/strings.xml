@@ -167,4 +167,10 @@
     <string name="selling_price">سعر البيع</string>
     <string name="expiration_date_format">تاريخ انتهاء الصلاحية (YYYY-MM-DD)</string>
     <string name="visual_food_emoji">الشكل : %s (رمز تعبيري)</string>
+    <string name="delete_product_title">حذف المنتج</string>
+    <string name="delete_product_confirm">هل أنت متأكد من رغبتك في حذف هذا المنتج نهائياً؟</string>
+    <string name="delete_customer_title">حذف العميل</string>
+    <string name="delete_customer_confirm">هل أنت متأكد من رغبتك في حذف هذا العميل نهائياً؟</string>
+    <string name="delete_user_title">حذف المستخدم</string>
+    <string name="delete_user_confirm">هل أنت متأكد من رغبتك في حذف هذا المستخدم نهائياً؟</string>
 </resources>

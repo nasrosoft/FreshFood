@@ -95,6 +95,17 @@ class CustomersViewModel(
             }
         }
     }
+
+    fun deleteCustomer(id: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteCustomer(id)
+                loadCustomers()
+            } catch (e: Exception) {
+                _uiState.value = CustomersUiState.Error(e.message ?: "Failed to delete customer")
+            }
+        }
+    }
 }
 
 class CustomersViewModelFactory(
