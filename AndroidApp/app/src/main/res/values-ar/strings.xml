@@ -22,9 +22,13 @@
     <string name="good_morning">صباح الخير</string>
     <string name="admin">المدير</string>
     <string name="todays_sales">مبيعات اليوم</string>
-    <string name="vs_yesterday">+12.5% مقارنة بالأمس</string>
-    <string name="profit_day">أرباح اليوم</string>
-    <string name="est_margin">هامش ربح تقديري 20%</string>
+    <string name="vs_yesterday">%1$s مقارنة بالأمس</string>
+    <string name="yesterday">الأمس</string>
+    <string name="last_week">الأسبوع الماضي</string>
+    <string name="last_month">الشهر الماضي</string>
+    <string name="vs_label">%1$s مقارنة بـ %2$s</string>
+    <string name="profit_day">الأرباح</string>
+    <string name="est_margin">هامش ربح تقديري %1$s%%</string>
     <string name="stock_value">قيمة المخزون</string>
     <string name="alerts">التنبيهات</string>
     <string name="products_low_stock">%d منتجات ذات مخزون منخفض</string>
