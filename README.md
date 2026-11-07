@@ -11,6 +11,11 @@ A modern, complete Android application built for managing fresh food stock, poin
 - **Supabase Backend:** Fully integrated with Supabase for PostgreSQL database storage and secure Authentication.
 - **Clean Architecture:** Built with Jetpack Compose, MVVM pattern, and Kotlin Coroutines.
 
+## 🖥️ Windows Master Station
+
+The Windows desktop app (`DesktopApp/`) is the **master** of the system, and the Android apps are extensions it approves and controls.
+See [MASTER_EXTENSION_ARCHITECTURE.md](MASTER_EXTENSION_ARCHITECTURE.md) for setup and design.
+
 ## 🛠️ Tech Stack
 
 - **UI:** Jetpack Compose (Material 3)

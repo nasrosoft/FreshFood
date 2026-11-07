@@ -60,6 +60,8 @@ import kotlinx.coroutines.launch
 fun MainAppScreen(
     userId: String?,
     userRole: String,
+    allowedModules: Set<String>? = null, // modules granted by the master PC (null = legacy, all by role)
+    masterOnline: Boolean = true,
     dashboardViewModel: DashboardViewModel,
     productsViewModel: ProductsViewModel,
     posViewModel: PosViewModel,
@@ -75,6 +77,9 @@ fun MainAppScreen(
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
+    // The Windows master station decides which modules this phone may open.
+    // Users and Paramétrage are master-only and never granted to a phone.
+    fun can(module: String): Boolean = allowedModules == null || module in allowedModules
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: if (userRole == "DELIVERY") "deliveries" else "dashboard"
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -253,102 +258,120 @@ fun MainAppScreen(
                 // Navigation Items
                 if (!isDelivery) {
                     // 1. Dashboard
-                    DrawerItem(
-                        icon = Icons.Filled.Home,
-                        label = stringResource(R.string.dashboard),
-                        selected = currentRoute == "dashboard",
-                        onClick = {
-                            navController.navigate("dashboard") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("dashboard")) {
+                        DrawerItem(
+                            icon = Icons.Filled.Home,
+                            label = stringResource(R.string.dashboard),
+                            selected = currentRoute == "dashboard",
+                            onClick = {
+                                navController.navigate("dashboard") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                     // 2. Sales (POS)
-                    DrawerItem(
-                        icon = Icons.Filled.ShoppingCart,
-                        label = stringResource(R.string.sales_pos),
-                        selected = currentRoute == "pos",
-                        onClick = {
-                            navController.navigate("pos") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("pos")) {
+                        DrawerItem(
+                            icon = Icons.Filled.ShoppingCart,
+                            label = stringResource(R.string.sales_pos),
+                            selected = currentRoute == "pos",
+                            onClick = {
+                                navController.navigate("pos") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                     // 3. Products
-                    DrawerItem(
-                        icon = Icons.Filled.List,
-                        label = stringResource(R.string.products),
-                        selected = currentRoute == "products",
-                        onClick = {
-                            navController.navigate("products") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("products")) {
+                        DrawerItem(
+                            icon = Icons.Filled.List,
+                            label = stringResource(R.string.products),
+                            selected = currentRoute == "products",
+                            onClick = {
+                                navController.navigate("products") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                     // 4. Purchase Entry
-                    DrawerItem(
-                        icon = Icons.Filled.Add,
-                        label = stringResource(R.string.purchase_entry),
-                        selected = currentRoute == "purchases",
-                        onClick = {
-                            navController.navigate("purchases") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("purchases")) {
+                        DrawerItem(
+                            icon = Icons.Filled.Add,
+                            label = stringResource(R.string.purchase_entry),
+                            selected = currentRoute == "purchases",
+                            onClick = {
+                                navController.navigate("purchases") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                     // 5. Deliveries
-                    DrawerItem(
-                        icon = Icons.Filled.ShoppingCart,
-                        label = stringResource(R.string.deliveries),
-                        selected = currentRoute == "deliveries",
-                        onClick = {
-                            navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("deliveries")) {
+                        DrawerItem(
+                            icon = Icons.Filled.ShoppingCart,
+                            label = stringResource(R.string.deliveries),
+                            selected = currentRoute == "deliveries",
+                            onClick = {
+                                navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                     // 6. Customers
-                    DrawerItem(
-                        icon = Icons.Filled.Person,
-                        label = stringResource(R.string.customers),
-                        selected = currentRoute == "customers",
-                        onClick = {
-                            navController.navigate("customers") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("customers")) {
+                        DrawerItem(
+                            icon = Icons.Filled.Person,
+                            label = stringResource(R.string.customers),
+                            selected = currentRoute == "customers",
+                            onClick = {
+                                navController.navigate("customers") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                     // 7. Users / Drivers
-                    DrawerItem(
-                        icon = Icons.Filled.Person,
-                        label = stringResource(R.string.users_drivers),
-                        selected = currentRoute == "users",
-                        onClick = {
-                            navController.navigate("users") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("users")) {
+                        DrawerItem(
+                            icon = Icons.Filled.Person,
+                            label = stringResource(R.string.users_drivers),
+                            selected = currentRoute == "users",
+                            onClick = {
+                                navController.navigate("users") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                 } else {
-                    DrawerItem(
-                        icon = Icons.Filled.ShoppingCart,
-                        label = stringResource(R.string.deliveries),
-                        selected = currentRoute == "deliveries",
-                        onClick = {
-                            navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
-                            scope.launch { drawerState.close() }
-                        }
-                    )
+                    if (can("deliveries")) {
+                        DrawerItem(
+                            icon = Icons.Filled.ShoppingCart,
+                            label = stringResource(R.string.deliveries),
+                            selected = currentRoute == "deliveries",
+                            onClick = {
+                                navController.navigate("deliveries") { launchSingleTop = true; restoreState = true }
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
                 Divider(modifier = Modifier.padding(horizontal = 16.dp), color = CardBorder)
 
                 // Paramétrage Button
-                DrawerItem(
-                    icon = Icons.Filled.Build,
-                    label = stringResource(R.string.parametrage),
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        editBrandName = brandName
-                        editBrandTagline = brandTagline
-                        showParametrageDialog = true
-                    }
-                )
+                if (can("settings")) {
+                    DrawerItem(
+                        icon = Icons.Filled.Build,
+                        label = stringResource(R.string.parametrage),
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            editBrandName = brandName
+                            editBrandTagline = brandTagline
+                            showParametrageDialog = true
+                        }
+                    )
+                }
 
                 DrawerItem(
                     icon = Icons.Filled.Settings,
@@ -517,20 +540,24 @@ fun MainAppScreen(
                             horizontalArrangement = Arrangement.SpaceAround,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            BottomNavButton(
-                                icon = Icons.Filled.Home,
-                                label = stringResource(R.string.home),
-                                selected = currentRoute == "deliveries",
-                                onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
-                                modifier = Modifier.weight(1f)
-                            )
-                            BottomNavButton(
-                                icon = Icons.Filled.ShoppingCart,
-                                label = stringResource(R.string.deliveries),
-                                selected = currentRoute == "deliveries_list",
-                                onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
-                                modifier = Modifier.weight(1f)
-                            )
+                            if (can("deliveries")) {
+                                BottomNavButton(
+                                    icon = Icons.Filled.Home,
+                                    label = stringResource(R.string.home),
+                                    selected = currentRoute == "deliveries",
+                                    onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (can("deliveries")) {
+                                BottomNavButton(
+                                    icon = Icons.Filled.ShoppingCart,
+                                    label = stringResource(R.string.deliveries),
+                                    selected = currentRoute == "deliveries_list",
+                                    onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                             BottomNavButton(
                                 icon = Icons.Filled.Person,
                                 label = stringResource(R.string.profile),
@@ -549,70 +576,90 @@ fun MainAppScreen(
                             horizontalArrangement = Arrangement.SpaceAround,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            BottomNavButton(
-                                icon = Icons.Filled.Home,
-                                label = stringResource(R.string.dashboard),
-                                selected = currentRoute == "dashboard",
-                                onClick = { navController.navigate("dashboard") { launchSingleTop = true; restoreState = true } },
-                                modifier = Modifier.weight(1f)
-                            )
-                            BottomNavButton(
-                                icon = Icons.Filled.List,
-                                label = stringResource(R.string.products),
-                                selected = currentRoute == "products",
-                                onClick = { navController.navigate("products") { launchSingleTop = true; restoreState = true } },
-                                modifier = Modifier.weight(1f)
-                            )
+                            if (can("dashboard")) {
+                                BottomNavButton(
+                                    icon = Icons.Filled.Home,
+                                    label = stringResource(R.string.dashboard),
+                                    selected = currentRoute == "dashboard",
+                                    onClick = { navController.navigate("dashboard") { launchSingleTop = true; restoreState = true } },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (can("products")) {
+                                BottomNavButton(
+                                    icon = Icons.Filled.List,
+                                    label = stringResource(R.string.products),
+                                    selected = currentRoute == "products",
+                                    onClick = { navController.navigate("products") { launchSingleTop = true; restoreState = true } },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                             
                             // Center (+) Elevated FAB
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
-                                contentAlignment = Alignment.Center
-                            ) {
+                            if (can("pos")) {
                                 Box(
                                     modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(PrimaryBlue),
+                                        .weight(1f)
+                                        .clickable { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        Icons.Filled.Add, 
-                                        contentDescription = stringResource(R.string.new_sale), 
-                                        tint = Color.White, 
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .background(PrimaryBlue),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Add, 
+                                            contentDescription = stringResource(R.string.new_sale), 
+                                            tint = Color.White, 
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             }
 
-                            BottomNavButton(
-                                icon = Icons.Filled.ShoppingCart,
-                                label = stringResource(R.string.sales),
-                                selected = currentRoute == "pos",
-                                onClick = { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
-                                modifier = Modifier.weight(1f)
-                            )
-                            BottomNavButton(
-                                icon = Icons.Filled.Menu,
-                                label = stringResource(R.string.deliveries),
-                                selected = currentRoute == "deliveries",
-                                onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
-                                modifier = Modifier.weight(1f)
-                            )
+                            if (can("pos")) {
+                                BottomNavButton(
+                                    icon = Icons.Filled.ShoppingCart,
+                                    label = stringResource(R.string.sales),
+                                    selected = currentRoute == "pos",
+                                    onClick = { navController.navigate("pos") { launchSingleTop = true; restoreState = true } },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (can("deliveries")) {
+                                BottomNavButton(
+                                    icon = Icons.Filled.Menu,
+                                    label = stringResource(R.string.deliveries),
+                                    selected = currentRoute == "deliveries",
+                                    onClick = { navController.navigate("deliveries") { launchSingleTop = true; restoreState = true } },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
             }
         ) { padding ->
-            val startDest = if (isDelivery) "deliveries" else "dashboard"
+            val startDest = if (isDelivery) "deliveries" else
+                listOf("dashboard", "deliveries", "pos", "products", "customers", "purchases").firstOrNull { can(it) } ?: "deliveries"
+            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (!masterOnline && allowedModules != null) {
+                Text(
+                    stringResource(R.string.master_offline_banner),
+                    modifier = Modifier.fillMaxWidth().background(StatusWarning).padding(horizontal = 12.dp, vertical = 6.dp),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
             NavHost(
                 navController = navController, 
                 startDestination = startDest, 
                 modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .background(AppBackground)
             ) {
                 composable("dashboard") { 
@@ -698,11 +745,12 @@ fun MainAppScreen(
                     )
                 }
                 composable("users") {
-                    UserManagementScreen(
+                    if (can("users")) UserManagementScreen(
                         profileRepository = profileRepository,
                         onOpenDrawer = { scope.launch { drawerState.open() } }
                     )
                 }
+            }
             }
         }
     }

@@ -177,4 +177,15 @@
     <string name="delete_customer_confirm">هل أنت متأكد من رغبتك في حذف هذا العميل نهائياً؟</string>
     <string name="delete_user_title">حذف المستخدم</string>
     <string name="delete_user_confirm">هل أنت متأكد من رغبتك في حذف هذا المستخدم نهائياً؟</string>
+    <!-- Master (PC) / extension (Android) -->
+    <string name="device_waiting_title">في انتظار الموافقة</string>
+    <string name="device_waiting_message">هذا الهاتف امتداد للحاسوب الرئيسي. اطلب من المسؤول الموافقة عليه في «أجهزة أندرويد» على الحاسوب الرئيسي.</string>
+    <string name="device_revoked_title">تم إلغاء الوصول</string>
+    <string name="device_revoked_message">ألغى الحاسوب الرئيسي وصول هذا الهاتف أو هذا الحساب. اتصل بالمسؤول.</string>
+    <string name="device_error_title">تعذر الوصول إلى المحطة الرئيسية</string>
+    <string name="device_code">رمز الجهاز: %1$s</string>
+    <string name="device_checking">جارٍ التحقق من الوصول مع الحاسوب الرئيسي…</string>
+    <string name="check_again">تحقق مرة أخرى</string>
+    <string name="master_offline_banner">الحاسوب الرئيسي غير متصل. عملياتك محفوظة.</string>
+    <string name="no_module_granted">لم يتم منح أي وحدة لهذا الهاتف بعد.</string>
 </resources>
