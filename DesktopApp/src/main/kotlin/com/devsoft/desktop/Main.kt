@@ -98,6 +98,10 @@ private fun LoginScreen(controller: MasterController, logo: BitmapPainter) {
 
     fun submit() {
         if (busy || email.isBlank() || password.isBlank()) return
+        if (!email.contains("@")) {
+            err = "Saisissez l'adresse email complète du compte administrateur (ex. admin@entreprise.dz)."
+            return
+        }
         busy = true; err = null
         scope.launch {
             err = controller.login(email, password)

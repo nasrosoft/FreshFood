@@ -220,8 +220,10 @@ class MasterController(private val scope: CoroutineScope) {
         val msg = e.message ?: e.toString()
         return when {
             msg.contains("Invalid login credentials", true) -> "Email ou mot de passe incorrect."
-            msg.contains("UnknownHost", true) || msg.contains("Unable to resolve", true) ||
-                msg.contains("ConnectException", true) -> "Pas de connexion Internet."
+            msg.contains("No such host", true) || msg.contains("UnknownHost", true) || msg.contains("Unable to resolve", true) ->
+                "Serveur introuvable (${BackendConfig.url}).\n" +
+                    "Vérifiez la connexion Internet, puis que le projet Supabase est actif (un projet gratuit se met en pause après inactivité)."
+            msg.contains("ConnectException", true) || msg.contains("timed out", true) -> "Pas de connexion Internet."
             else -> msg.lineSequence().firstOrNull { it.isNotBlank() }?.take(300) ?: msg
         }
     }
