@@ -177,4 +177,15 @@
     <string name="delete_customer_confirm">Êtes-vous sûr de vouloir supprimer définitivement ce client ?</string>
     <string name="delete_user_title">Supprimer l\'utilisateur</string>
     <string name="delete_user_confirm">Êtes-vous sûr de vouloir supprimer définitivement cet utilisateur ?</string>
+    <!-- Master (PC) / extension (Android) -->
+    <string name="device_waiting_title">En attente d\'approbation</string>
+    <string name="device_waiting_message">Ce téléphone est une extension du PC principal. Demandez à l\'administrateur de l\'approuver dans « Appareils Android » sur le PC principal.</string>
+    <string name="device_revoked_title">Accès révoqué</string>
+    <string name="device_revoked_message">Le PC principal a révoqué l\'accès de ce téléphone ou de ce compte. Contactez votre administrateur.</string>
+    <string name="device_error_title">Poste principal injoignable</string>
+    <string name="device_code">Code appareil : %1$s</string>
+    <string name="device_checking">Vérification de l\'accès auprès du PC principal…</string>
+    <string name="check_again">Vérifier à nouveau</string>
+    <string name="master_offline_banner">PC principal hors ligne. Vos opérations restent enregistrées.</string>
+    <string name="no_module_granted">Aucun module accordé à ce téléphone pour le moment.</string>
 </resources>

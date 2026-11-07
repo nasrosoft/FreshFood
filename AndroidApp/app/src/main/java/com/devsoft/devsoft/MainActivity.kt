@@ -139,9 +139,23 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
+                                val logoutAction = {
+                                    com.devsoft.devsoft.utils.NotificationHelper.persistCurrentUser(this@MainActivity, null, null)
+                                    com.devsoft.devsoft.utils.NotificationHelper.cancelBackgroundDeliverySync(this@MainActivity)
+                                    authViewModel.logout()
+                                }
+
+                                // This phone is an extension of the Windows master station:
+                                // it opens only after the master approved it, with the modules it granted.
+                                com.devsoft.devsoft.presentation.activation.DeviceGate(
+                                    activationRepository = activationRepo,
+                                    onLogout = logoutAction
+                                ) { allowedModules, masterOnline ->
                                 MainAppScreen(
                                     userId = userId,
                                     userRole = userRole,
+                                    allowedModules = allowedModules,
+                                    masterOnline = masterOnline,
                                     dashboardViewModel = viewModel(factory = dashFactory),
                                     productsViewModel = viewModel(factory = prodFactory),
                                     posViewModel = viewModel(factory = posFactory),
@@ -154,12 +168,9 @@ class MainActivity : ComponentActivity() {
                                     activationRepository = activationRepo,
                                     targetDeliveryId = targetDeliveryOrderId,
                                     onTargetDeliveryHandled = { targetDeliveryOrderId = null },
-                                    onLogout = { 
-                                        com.devsoft.devsoft.utils.NotificationHelper.persistCurrentUser(this@MainActivity, null, null)
-                                        com.devsoft.devsoft.utils.NotificationHelper.cancelBackgroundDeliverySync(this@MainActivity)
-                                        authViewModel.logout() 
-                                    }
+                                    onLogout = logoutAction
                                 )
+                                }
                             }
                             else -> {
                                 LaunchedEffect(Unit) {
